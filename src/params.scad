@@ -32,8 +32,8 @@ env_grow = 0.3;       // envelope grows this much past measured geometry
 
 // ---- Seat placement
 seat_angle = 45;      // degrees from horizontal
-seat_u0 = 35;         // slope distance from the dock's front-bottom edge to the pager's -Y edge
-seat_depth = 22;      // pocket depth below the front face (covers vent tops)
+seat_u0 = 47;         // slope distance from the dock's front-bottom edge to the pager's -Y edge
+seat_depth = 23.5;    // pocket depth below the front face (covers vent tops + gasket groove)
 lip_z = 4;            // nothing of the seated pager may sit lower than this
 
 // ---- Fan
@@ -53,7 +53,7 @@ seat_clear = 0.5;     // per side, pager in its pocket
 clip_relief = 1.0;    // extra room around the belt clip
 win_inset = 3;         // end windows stop this far short of the long edges
 side_margin = 4;
-top_flat = 10;
+top_flat = 16;        // also keeps the fan opening clear of the seat floor slab
 exh_w = 6;            // exhaust slot beyond the pager's +Y edge (along the slope)
 fan_tray = fan_size + 2*fan_clear + 2*fan_nub[1];
 // slope distance from the rear-bottom edge to the tray's lower wall: keeps the
@@ -65,3 +65,18 @@ H = max(H_fan, H_pager);
 run = H / tan(seat_angle);
 D = 2*run + top_flat;
 Wd = max(fan_tray, pg_L + 2*seat_clear) + 2*wall + 2*side_margin;
+
+// ---- Air path
+duct_w = 5;           // intake duct reaches this far beyond the pager's -Y edge
+duct_dip = 6;         // ...and this far below the seat floor slab, into the plenum
+vent_margin = 1.5;    // duct / exhaust openings overlap each grille by this much
+grille_bar = 1.6;     // exhaust bar grille: 1.6 / (1.6 + 3.8) solid -> 70 % open
+grille_gap = 3.8;
+grille_t = 1.6;
+grille_rim = 1.2;     // strip along the pocket edge that anchors the bars' lower ends
+groove_w = 1.2;       // optional TPU gasket groove in the pocket's -Y wall
+groove_d = 1.0;
+// widest unsupported span inside the plenum: the roof under the top flat
+roof_bridge = top_flat + 2 * wall * tan(22.5);
+// pager-frame Z of the dock's front face
+face_z = pg_zc - pg_T/2 + seat_depth;

@@ -317,6 +317,93 @@ def test_pinch_access():
             {"fan_size": fs}), "%d: no pinch access" % fs
 
 
+# ---------------------------------------------------------------- task 4
+ROOM_AIR = ["seat_pocket", "end_windows", "exhaust_chamber", "button_notch"]
+
+
+@test
+def test_exhaust_isolated():
+    """Every room-air cut stays >= wall-0.4 away from the plenum (only the intake duct joins them)."""
+    for fs in VARIANTS:
+        for m in ROOM_AIR:
+            assert is_empty("intersection(){plenum(); %s(g = wall - 0.4);}" % m, {"fan_size": fs}), \
+                "%d: %s leaks into the plenum" % (fs, m)
+
+
+@test
+def test_plenum_reaches_fan():
+    """Just inside the tray floor, the whole fan opening is plenum."""
+    for fs in VARIANTS:
+        probe = ("fan_pose() translate([0, 0, -wall - fan_clear - 3]) linear_extrude(2)"
+                 " square(fan_size - 2*fan_ledge - 8, center = true);")
+        assert is_empty("difference(){ %s plenum(); }" % probe, {"fan_size": fs}), \
+            "%d: plenum doesn't reach the fan opening" % fs
+
+
+@test
+def test_intake_covers_vents():
+    for fs in VARIANTS:
+        for i in (0, 1):
+            zone = ("pager_pose() let(v = vent_lo[%d]) translate([v[0], -pg_W/2 - 1.5, v[2]])"
+                    " cube([v[1] - v[0], 1.5, v[3] - v[2]]);" % i)
+            assert is_empty("difference(){ %s intake_duct(); }" % zone, {"fan_size": fs}), \
+                "%d: vent %d not covered by the intake duct" % (fs, i)
+
+
+@test
+def test_intake_joins_plenum():
+    for fs in VARIANTS:
+        d = {"fan_size": fs}
+        _, dst = run_scad("intersection(){ intake_duct(); plenum(); }", d)
+        bb = stl_bbox(dst) if dst.exists() else None
+        assert bb, "%d: intake duct never reaches the plenum" % fs
+        v = P("vent_lo", d)
+        assert bb[0][0] <= v[0][0] and bb[1][0] >= v[1][1], \
+            "%d: duct/plenum overlap %r doesn't span both grilles" % (fs, bb)
+
+
+@test
+def test_exhaust_covers_vent():
+    for fs in VARIANTS:
+        zone = ("pager_pose() let(v = vent_hi) translate([v[0], pg_W/2, v[2]])"
+                " cube([v[1] - v[0], 1.5, v[3] - v[2]]);")
+        assert is_empty("difference(){ %s exhaust_chamber(); }" % zone, {"fan_size": fs}), \
+            "%d: upper grille not open to the exhaust" % fs
+
+
+@test
+def test_bar_grille_open_area():
+    bar, gap = P("[grille_bar, grille_gap]")
+    assert gap / (bar + gap) >= 0.70, "grille open area %.2f" % (gap / (bar + gap))
+    for fs in VARIANTS:
+        assert not is_empty("intersection(){dock(); bar_grille();}", {"fan_size": fs}), \
+            "%d: grille bars missing from the dock" % fs
+
+
+@test
+def test_button_notch_clear():
+    for fs in VARIANTS:
+        assert is_empty(
+            "intersection(){dock(); pager_pose() translate([(btn_hi[0] + btn_hi[1])/2,"
+            " pg_W/2 + seat_clear + 5.2, (btn_hi[2] + btn_hi[3])/2]) cylinder(d = 10, h = 60);}",
+            {"fan_size": fs}), "%d: side button not reachable" % fs
+
+
+@test
+def test_no_trapped_supports():
+    ang, bridge = P("[seat_angle, roof_bridge]")
+    # internal down-facing plenum surfaces are at seat_angle or 90-seat_angle from horizontal
+    assert min(ang, 90 - ang) >= 45 - 1e-9, "overhang %r" % min(ang, 90 - ang)
+    assert bridge <= 20, "roof bridge %r mm" % bridge
+
+
+@test
+def test_gasket_groove_cut():
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); gasket_groove();}", {"fan_size": fs}), \
+            "%d: groove not cut" % fs
+
+
 # ---------------------------------------------------------------- runner
 def main(argv):
     flt = argv[1:]

@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Geometry tests for the Pager cooling dock.
+
+Drives the openscad CLI (2021.01, CGAL). Usage:
+    python3 -I tests/check.py [substring-filter ...]
+
+Interference primitive: is_empty("intersection(){A(); B();}") renders the
+expression and reports whether the result has no geometry. The Hak5
+reference STL is not a closed mesh, so CGAL cannot boolean it; dock tests
+use pager_envelope(), and test_envelope_contains_ref proves (in Python)
+that the envelope contains every vertex of the reference mesh.
+"""
+import json
+import math
+import re
+import struct
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+LIB = REPO / "src" / "lib.scad"
+REF_STL = REPO / "hak5-wifi-pineapple-pager.stl"
+VARIANTS = [80, 92, 120]
+BED = 256.0
+
+
+class ScadError(Exception):
+    pass
+
+
+def _defines(defines):
+    args = []
+    for k, v in (defines or {}).items():
+        if isinstance(v, str):
+            v = '"%s"' % v
+        elif isinstance(v, bool):
+            v = "true" if v else "false"
+        args += ["-D", "%s=%s" % (k, v)]
+    return args
+
+
+def run_scad(expr, defines=None, timeout=900, out="stl"):
+    """Render `expr` (with src/lib.scad included). Returns (log, out_path)."""
+    tmp = Path(tempfile.mkdtemp(prefix="dockt-"))
+    src = tmp / "t.scad"
+    src.write_text("include <%s>\n%s\n" % (LIB, expr))
+    dst = tmp / ("t." + out)
+    cmd = ["openscad", "-o", str(dst)] + _defines(defines) + [str(src)]
+    p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    log = p.stdout + p.stderr
+    if "ERROR" in log or "Assertion" in log or "WARNING: Ignoring unknown" in log:
+        raise ScadError(log[-3000:])
+    if p.returncode != 0 and "top level object is empty" not in log \
+            and "No top level geometry" not in log:
+        raise ScadError(log[-3000:])
+    return log, dst
+
+
+def echo_json(expr, defines=None):
+    """Run `expr`, which must echo(str("J ", value)); return parsed values."""
+    log, _ = run_scad(expr + "\ncube(0.01);", defines, out="csg")
+    vals = []
+    for m in re.finditer(r'ECHO: "J (.*)"', log):
+        vals.append(json.loads(m.group(1).replace("undef", "null")))
+    if not vals:
+        raise ScadError("no J echo in:\n" + log[-2000:])
+    return vals
+
+
+def P(name, defines=None):
+    """Value of a top-level variable/expression from lib.scad."""
+    return echo_json('echo(str("J ", %s));' % name, defines)[0]
+
+
+def stl_facets(path):
+    data = Path(path).read_bytes()
+    if data[:5] == b"solid" and b"facet" in data[:400]:
+        tris, cur = [], []
+        for line in data.decode().splitlines():
+            line = line.strip()
+            if line.startswith("vertex"):
+                cur.append(tuple(float(x) for x in line.split()[1:4]))
+                if len(cur) == 3:
+                    tris.append(tuple(cur))
+                    cur = []
+        return tris
+    n = struct.unpack("<I", data[80:84])[0]
+    tris = []
+    for i in range(n):
+        d = struct.unpack("<12f", data[84 + 50 * i: 84 + 50 * i + 48])
+        tris.append((d[3:6], d[6:9], d[9:12]))
+    return tris
+
+
+def stl_bbox(path):
+    pts = [v for t in stl_facets(path) for v in t]
+    if not pts:
+        return None
+    return ([min(p[k] for p in pts) for k in range(3)],
+            [max(p[k] for p in pts) for k in range(3)])
+
+
+def is_empty(expr, defines=None, timeout=1800):
+    log, dst = run_scad(expr, defines, timeout=timeout)
+    if "top level object is empty" in log or "No top level geometry" in log:
+        return True
+    return not dst.exists() or len(stl_facets(dst)) == 0
+
+
+# ---------------------------------------------------------------- tests
+TESTS = []
+
+
+def test(fn):
+    TESTS.append(fn)
+    return fn
+
+
+def approx(a, b, tol):
+    assert abs(a - b) <= tol, "%r != %r (tol %r)" % (a, b, tol)
+
+
+@test
+def test_pager_params_match_stl():
+    lo, hi = stl_bbox(REF_STL)
+    L, W, T, clip_t, btn_h = P("[pg_L, pg_W, pg_T, pg_clip_t, pg_btn_h]")
+    approx(hi[0] - lo[0], L, 0.3)
+    approx(hi[1] - lo[1], W + pg_side_btn_proud(), 0.3)
+    approx(hi[2] - lo[2], T + clip_t + btn_h, 0.3)
+
+
+def pg_side_btn_proud():
+    return P("pg_side_btn[1][1] - pg_W/2")
+
+
+@test
+def test_envelope_contains_ref():
+    """Every reference-mesh vertex lies inside pager_envelope(clip=true)."""
+    boxes, (L, W, T, r, zc), g = P(
+        "[pg_env_boxes, [pg_L, pg_W, pg_T, pg_r, pg_zc], env_grow]")
+    pts = {v for t in stl_facets(REF_STL) for v in t}
+    zb, zf = zc - T / 2, zc + T / 2
+    outside = []
+    for x, y, z in pts:
+        if zb - g <= z <= zf + g:
+            ax, ay = abs(x) - (L / 2 - r), abs(y) - (W / 2 - r)
+            if (ax <= 0 or ay <= 0) and abs(x) <= L / 2 + g and abs(y) <= W / 2 + g:
+                continue
+            if ax > 0 and ay > 0 and math.hypot(ax, ay) <= r + g:
+                continue
+        if any(b[0][0] - g <= x <= b[1][0] + g and b[0][1] - g <= y <= b[1][1] + g
+               and b[0][2] - g <= z <= b[1][2] + g for b in boxes):
+            continue
+        outside.append((x, y, z))
+    assert not outside, "%d vertices outside envelope, e.g. %s" % (
+        len(outside), outside[:5])
+
+
+@test
+def test_pose_on_slope():
+    n, lo_edge, hi_edge, minz, lip_z, ang = P(
+        "[pose_dir([0,0,1]), pose_pt([0,-pg_W/2,pg_zc]), pose_pt([0,pg_W/2,pg_zc]),"
+        " min([for (p = pg_env_corners(true)) pose_pt(p)[2]]), lip_z, seat_angle]")
+    approx(ang, 45, 0)
+    approx(n[0], 0, 1e-6)
+    approx(n[1], -math.sin(math.radians(45)), 1e-6)
+    approx(n[2], math.cos(math.radians(45)), 1e-6)
+    assert lo_edge[2] < hi_edge[2], "-Y edge must be the lower edge"
+    assert lo_edge[1] < hi_edge[1], "-Y edge must be nearest the user"
+    assert minz >= lip_z - 1e-6, "posed pager dips below lip_z: %r" % minz
+
+
+# ---------------------------------------------------------------- runner
+def main(argv):
+    flt = argv[1:]
+    sel = [t for t in TESTS if not flt or any(f in t.__name__ for f in flt)]
+    failed = 0
+    for t in sel:
+        t0 = time.time()
+        try:
+            t()
+            print("PASS %-40s %6.1fs" % (t.__name__, time.time() - t0), flush=True)
+        except Exception as e:  # noqa: BLE001 - report every failure
+            failed += 1
+            msg = str(e).strip().splitlines()
+            print("FAIL %-40s %6.1fs  %s: %s" % (
+                t.__name__, time.time() - t0, type(e).__name__,
+                " | ".join(msg[-4:])[:600]), flush=True)
+    print("%d passed, %d failed" % (len(sel) - failed, failed))
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

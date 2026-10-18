@@ -173,6 +173,82 @@ def test_pose_on_slope():
     assert minz >= lip_z - 1e-6, "posed pager dips below lip_z: %r" % minz
 
 
+# ---------------------------------------------------------------- task 2
+def per_variant(fn_body):
+    for fs in VARIANTS:
+        fn_body(fs)
+
+
+@test
+def test_fits_bed():
+    def one(fs):
+        _, dst = run_scad("dock();", {"fan_size": fs})
+        lo, hi = stl_bbox(dst)
+        size = [hi[k] - lo[k] for k in range(3)]
+        assert all(s <= BED for s in size), "%d: %r exceeds bed" % (fs, size)
+    per_variant(one)
+
+
+@test
+def test_trapezoid_profile():
+    def one(fs):
+        H, D, Wd = P("[H, D, Wd]", {"fan_size": fs})
+        _, dst = run_scad("dock();", {"fan_size": fs})
+        lo, hi = stl_bbox(dst)
+        approx(hi[2], H, 0.5)
+        approx(lo[2], 0, 0.01)
+        approx(hi[1] - lo[1], D, 0.5)
+        approx(hi[0] - lo[0], Wd, 0.5)
+    per_variant(one)
+
+
+FAN_POSES = {
+    "as-is": "fan_pose() fan_envelope();",
+    # turned over (rotate 180 about the fan's Y axis) and turned 90 in-plane
+    "flipped": "fan_pose() translate([0,0,fan_t]) rotate([0,180,0]) fan_envelope();",
+    "rot90": "fan_pose() rotate([0,0,90]) fan_envelope();",
+    "flip-rot270": "fan_pose() translate([0,0,fan_t]) rotate([0,180,0]) rotate([0,0,270]) fan_envelope();",
+}
+
+
+@test
+def test_fan_fits_both_thickness():
+    for fs in VARIANTS:
+        for t in (25, 15):
+            assert is_empty("intersection(){dock(); %s}" % FAN_POSES["as-is"],
+                            {"fan_size": fs, "fan_t": t}), "%d/%d interferes" % (fs, t)
+
+
+@test
+def test_fan_fits_flipped():
+    for fs in VARIANTS:
+        for name, pose in FAN_POSES.items():
+            assert is_empty("intersection(){dock(); %s}" % pose, {"fan_size": fs}), \
+                "%d %s interferes" % (fs, name)
+
+
+@test
+def test_fan_retained():
+    for fs in VARIANTS:
+        d = {"fan_size": fs}
+        # sliding 2 mm down the rear slope is blocked by the tray's lower wall
+        assert not is_empty("intersection(){dock(); translate(-2*rear_t()) fan_pose() fan_envelope();}", d), \
+            "%d: fan can slide out of the tray" % fs
+        # lifting straight out along the rear-face normal is unobstructed
+        # stepped sweep (hull() of the non-convex fan+bump would invent material)
+        assert is_empty("intersection(){dock(); for (i = [0:5:60])"
+                        " translate(i*rear_n()) fan_pose() fan_envelope(); }", d), \
+            "%d: drop-in path obstructed" % fs
+
+
+@test
+def test_fan_sits_on_ledge():
+    for fs in VARIANTS:
+        # pushed 0.5 mm further in, the fan must hit the inner ledge (it can't fall into the plenum)
+        assert not is_empty("intersection(){dock(); translate(-0.8*rear_n()) fan_pose() fan_envelope();}",
+                            {"fan_size": fs}), "%d: fan not supported by ledge" % fs
+
+
 # ---------------------------------------------------------------- runner
 def main(argv):
     flt = argv[1:]

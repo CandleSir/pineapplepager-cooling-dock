@@ -43,3 +43,22 @@ fan_hole = fan_size == 80 ? 71.5 : fan_size == 92 ? 82.5 : 105;  // reference on
 // ---- General
 wall = 2.4;
 $fn = 48;
+
+// ---- Derived body geometry (dock frame: X across, -Y toward user, Z up)
+fan_clear = 0.6;      // per side, fan in its tray
+fan_ledge = 3;        // inner ledge the fan frame rests on
+fan_nub = [8, 4, 6];  // cable strain-relief bump on the frame edge [along, out, thick]
+seat_clear = 0.5;     // per side, pager in its pocket
+side_margin = 4;
+top_flat = 10;
+exh_w = 6;            // exhaust slot beyond the pager's +Y edge (along the slope)
+fan_tray = fan_size + 2*fan_clear + 2*fan_nub[1];
+// slope distance from the rear-bottom edge to the tray's lower wall: keeps the
+// tray's inner bottom corner a wall above the desk
+fan_v0 = (wall + (fan_t + wall) * cos(seat_angle)) / sin(seat_angle);
+H_fan = (fan_v0 + fan_tray + 2*wall) * sin(seat_angle);
+H_pager = (seat_u0 + pg_W + 2*seat_clear + exh_w + 3*wall) * sin(seat_angle);
+H = max(H_fan, H_pager);
+run = H / tan(seat_angle);
+D = 2*run + top_flat;
+Wd = max(fan_tray, pg_L + 2*seat_clear) + 2*wall + 2*side_margin;

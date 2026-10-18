@@ -390,11 +390,77 @@ def test_button_notch_clear():
             {"fan_size": fs}), "%d: side button not reachable" % fs
 
 
+def _normal(t):
+    a, b, c = t
+    u = [b[i] - a[i] for i in range(3)]
+    v = [c[i] - a[i] for i in range(3)]
+    n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
+    ln = math.sqrt(sum(x * x for x in n)) or 1.0
+    return [x / ln for x in n], ln / 2
+
+
+def bridges(tris, tol=0.02):
+    """Spans the slicer must bridge (printed standing on z = 0): returns
+    (hanging, ceilings). hanging = lengths of horizontal edges that are the lowest
+    line of every face meeting them, collinear pieces merged; ceilings = the
+    narrower plan extent of each flat down-facing face group, by height."""
+    def key(p):
+        return tuple(round(c, 3) for c in p)
+    edges, flat = {}, {}
+    for t in tris:
+        n, area = _normal(t)
+        for i in range(3):
+            a, b, o = t[i], t[(i + 1) % 3], t[(i + 2) % 3]
+            edges.setdefault(frozenset((key(a), key(b))), []).append((n, o))
+        z = min(p[2] for p in t)
+        if n[2] < -0.99 and z > 0.05 and area > 1e-6:
+            lo, hi = flat.setdefault(round(z, 1), ([1e9, 1e9], [-1e9, -1e9]))
+            for p in t:
+                for k in (0, 1):
+                    lo[k], hi[k] = min(lo[k], p[k]), max(hi[k], p[k])
+    runs = {}
+    for e, fs in edges.items():
+        if len(e) != 2 or len(fs) != 2:
+            continue
+        a, b = sorted(e)
+        if abs(a[2] - b[2]) > tol or a[2] < 0.05:
+            continue
+        if all(n[2] <= 0.01 and o[2] > a[2] + tol for n, o in fs):
+            d = [b[i] - a[i] for i in range(3)]
+            ln = math.sqrt(sum(x * x for x in d))
+            u = tuple(round(abs(x) / ln, 2) for x in d)
+            # line id: direction + position across it (all runs here are along X or Y)
+            line = (u, round(a[2], 1), round(a[1] if u[0] > 0.5 else a[0], 1))
+            ax = 0 if u[0] > 0.5 else 1
+            runs.setdefault(line, []).append(sorted((a[ax], b[ax])))
+    hanging = []
+    for segs in runs.values():
+        segs.sort()
+        cur = list(segs[0])
+        for s0, s1 in segs[1:]:
+            if s0 <= cur[1] + tol:
+                cur[1] = max(cur[1], s1)
+            else:
+                hanging.append(cur[1] - cur[0])
+                cur = [s0, s1]
+        hanging.append(cur[1] - cur[0])
+    ceilings = {z: min(hi[0] - lo[0], hi[1] - lo[1]) for z, (lo, hi) in flat.items()}
+    return hanging, ceilings
+
+
 @test
-def test_no_trapped_supports():
-    ang = P("seat_angle")
-    # internal down-facing plenum surfaces are at seat_angle or 90-seat_angle from horizontal
-    assert min(ang, 90 - ang) >= 45 - 1e-9, "overhang %r" % min(ang, 90 - ang)
+def test_no_long_bridges():
+    """Supports stay OFF (the plenum is closed), so nothing may hang: every edge with
+    nothing beneath it and every flat ceiling spans at most bridge_max."""
+    for fs in VARIANTS:
+        d = {"fan_size": fs}
+        _, dst = run_scad("dock();", d)
+        hanging, ceilings = bridges(stl_facets(dst))
+        lim = P("bridge_max", d) + 0.1
+        assert max(hanging) <= lim, "%d: hanging edges %s mm" % (
+            fs, [round(x, 1) for x in sorted(hanging, reverse=True)[:4]])
+        wide = {z: round(w, 1) for z, w in ceilings.items() if w > lim}
+        assert not wide, "%d: flat ceilings wider than bridge_max at z=%s" % (fs, wide)
 
 
 @test

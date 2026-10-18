@@ -58,8 +58,11 @@ every variant; use it to retune the fit for a few grams of filament.
 - **Dock:**
   - Print it standing on its base, as exported.
   - **Supports OFF.** The inside is a sealed chamber, so any support the
-    slicer puts in there can never be removed. Every internal down-facing
-    surface is a 45° overhang.
+    slicer puts in there can never be removed. The supports are designed in
+    instead: thin ribs across the fan's air opening and small posts under the
+    belt-clip pocket. No bridge is longer than 25 mm and every other internal
+    overhang is 45°. Bambu Studio may still flag the short bridges; they print
+    fine.
   - Use 3 or more walls. Infill to taste; it's mostly hollow.
 - **Coupon:** prints face up, flat. Print it first to check the fit and the
   vent alignment before printing the full dock.

@@ -101,3 +101,8 @@ guide_d = 5;
 // ---- Fit coupon: the seat cradle (face down to the floor), printed face-up
 cradle_t = seat_depth + seat_clear + wall;
 gauge_h = 8;          // fit gauge: a collar of the pocket outline, slid onto the pager
+
+// ---- Printing (standing on the base, supports OFF)
+bridge_max = 25;      // longest span the slicer may bridge
+rib_w = 1.2;          // designed-in supports: ribs across the fan air opening, posts
+                      // under the clip pocket's wall (two 0.45 mm lines + margin)

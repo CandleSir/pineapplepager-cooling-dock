@@ -17,12 +17,29 @@ module fan_slot() {
             for (sx = [-1, 1])
                 translate([sx > 0 ? s/2 - 6 - fan_nub[0] - 1 : -s/2 + 5, s/2 - 0.01, -fan_clear])
                     cube([fan_nub[0] + 2, fan_nub[1] + fan_clear, fan_t + fan_clear + 80]);
-        // air opening through the ledge
-        translate([0, 0, -wall - fan_clear - 1])
-            linear_extrude(wall + 1.01)
-                offset(4) square(fan_size - 2*fan_ledge - 8, center = true);
+        // air opening through the ledge, split by ribs so the ledge strip above it
+        // never bridges more than bridge_max; ribs sit 0.5 below the ledge, clear of the blades
+        w = fan_size - 2*fan_ledge;
+        n = ceil(w / bridge_max);
+        difference() {
+            translate([0, 0, -wall - fan_clear - 1])
+                linear_extrude(wall + 1.01)
+                    offset(4) square(w - 8, center = true);
+            for (i = [1 : n - 1])
+                translate([-w/2 + i*w/n - rib_w/2, -w/2 - 1, -wall - fan_clear - 1.01])
+                    cube([rib_w, w + 2, wall + 0.51]);
+        }
     }
 }
+
+// Posts from the plenum floor to the lowest edge of the clip pocket's wall, which
+// otherwise hangs in mid-air; ends plus enough between to keep spans <= bridge_max.
+module clip_wall_posts() let(g = clip_relief + wall,
+                             x0 = pg_clip_box[0][0] - g, x1 = pg_clip_box[1][0] + g,
+                             n = ceil((x1 - x0 - rib_w) / bridge_max),
+                             r = pose_pt([0, pg_clip_box[0][1] - g, pg_clip_box[0][2] - g]))
+    for (i = [0 : n])
+        translate([x0 + i*(x1 - x0 - rib_w)/n, r[1] - wall/2, -1]) cube([rib_w, wall, r[2] + 1.5]);
 
 // Pager-frame prism: footprint `b` (2D box [[x0,y0],[x1,y1]]) from z0 out past the face.
 module out_prism(b, z0) translate([b[0][0], b[0][1], z0]) cube([b[1][0] - b[0][0], b[1][1] - b[0][1], 100]);
@@ -67,6 +84,7 @@ module plenum() difference() {
         behind_slab();
     }
     pager_pose() gbox(pg_clip_box, clip_relief + wall);
+    clip_wall_posts();
     fan_pose() translate([-fan_tray/2 - wall, -fan_tray/2 - wall, -fan_clear - wall])
         cube([fan_tray + 2*wall, fan_tray + 2*wall, 200]);
     fan_cable_channel(g = wall);

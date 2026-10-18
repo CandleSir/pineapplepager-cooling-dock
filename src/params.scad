@@ -25,6 +25,7 @@ vent_hi = [5.0, 25.0, -5.2, 7.4];                              // VERIFY BY CALI
 btn_hi = [-24.8, -16.6, -1.7, 2.5];                            // VERIFY BY CALIPER  +Y side button
 vent_end = [-21.7, 21.7, -9.5, 7.4];                           // VERIFY BY CALIPER  +X end vent
 port_end_sign = -1;   // VERIFY  USB-C + USB-A are on the -X end
+port_centres = [[-11.4, 0.45], [12.0, 1.1]];                  // VERIFY BY CALIPER  [y, z] of the two ports
 
 // ---- Envelope / fit
 env_grow = 0.3;       // envelope grows this much past measured geometry
@@ -49,6 +50,8 @@ fan_clear = 0.6;      // per side, fan in its tray
 fan_ledge = 3;        // inner ledge the fan frame rests on
 fan_nub = [8, 4, 6];  // cable strain-relief bump on the frame edge [along, out, thick]
 seat_clear = 0.5;     // per side, pager in its pocket
+clip_relief = 1.0;    // extra room around the belt clip
+win_inset = 3;         // end windows stop this far short of the long edges
 side_margin = 4;
 top_flat = 10;
 exh_w = 6;            // exhaust slot beyond the pager's +Y edge (along the slope)

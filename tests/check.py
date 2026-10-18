@@ -51,7 +51,9 @@ def run_scad(expr, defines=None, timeout=900, out="stl"):
     cmd = ["openscad", "-o", str(dst)] + _defines(defines) + [str(src)]
     p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     log = p.stdout + p.stderr
-    if "ERROR" in log or "Assertion" in log or "WARNING: Ignoring unknown" in log:
+    warns = [l for l in log.splitlines() if "WARNING" in l
+             and "top level object is empty" not in l and "No top level geometry" not in l]
+    if "ERROR" in log or "Assertion" in log or warns:
         raise ScadError(log[-3000:])
     if p.returncode != 0 and "top level object is empty" not in log \
             and "No top level geometry" not in log:
@@ -247,6 +249,72 @@ def test_fan_sits_on_ledge():
         # pushed 0.5 mm further in, the fan must hit the inner ledge (it can't fall into the plenum)
         assert not is_empty("intersection(){dock(); translate(-0.8*rear_n()) fan_pose() fan_envelope();}",
                             {"fan_size": fs}), "%d: fan not supported by ledge" % fs
+
+
+# ---------------------------------------------------------------- task 3
+def each_variant_clip(fn):
+    for fs in VARIANTS:
+        for clip in ("true", "false"):
+            fn({"fan_size": fs}, clip)
+
+
+@test
+def test_seat_clip_on_clear():
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); pager_pose() pager_envelope(true);}",
+                        {"fan_size": fs}), "%d: clip-on pager interferes" % fs
+
+
+@test
+def test_seat_clip_off_clear():
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); pager_pose() pager_envelope(false);}",
+                        {"fan_size": fs}), "%d: clip-off pager interferes" % fs
+
+
+@test
+def test_seat_supported():
+    """Pushed 0.8 mm further into the seat, the pager must hit the floor (it rests, not floats)."""
+    def one(d, clip):
+        g = P("seat_clear - env_grow", d)
+        assert not is_empty(
+            "intersection(){dock(); translate(-%f*slope_n()) pager_pose() pager_envelope(%s, btns=false);}"
+            % (g + 0.8, clip), d), "%r clip=%s floats" % (d, clip)
+    each_variant_clip(one)
+
+
+@test
+def test_drop_in_path():
+    """Lifting the seated pager 40 mm straight out of the face is unobstructed."""
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); for (i = [0:4:40])"
+                        " translate(i*slope_n()) pager_pose() pager_envelope(true);}",
+                        {"fan_size": fs}), "%d: drop-in path obstructed" % fs
+
+
+def plug_boxes():
+    # 20 (along Y) x 15 (along Z) x 25 (out along X) "fat plug" per USB port, STL frame
+    ports = P("port_centres")
+    return " ".join(
+        "translate([port_end_sign*(pg_L/2 + 0.5 + 12.5), %f, %f]) cube([25, 20, 15], center=true);"
+        % (y, z) for y, z in ports)
+
+
+@test
+def test_ports_exposed():
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); pager_pose() { %s }}" % plug_boxes(),
+                        {"fan_size": fs}), "%d: plug blocked" % fs
+
+
+@test
+def test_pinch_access():
+    """A 12 x 20 x 16 mm finger pocket beyond each short end, at mid-thickness and above, is clear."""
+    for fs in VARIANTS:
+        assert is_empty(
+            "intersection(){dock(); pager_pose() for (sx = [-1, 1])"
+            " translate([sx*(pg_L/2 + 0.5 + 6), 0, pg_zc + 4]) cube([12, 20, 16], center=true);}",
+            {"fan_size": fs}), "%d: no pinch access" % fs
 
 
 # ---------------------------------------------------------------- runner

@@ -21,7 +21,7 @@ function pose_dir(d) = let(q = pose_m() * [d[0], d[1], d[2], 0]) [q[0], q[1], q[
 module pager_pose() multmatrix(pose_m()) children();
 
 // Extra boxes outside the rounded body.
-function pg_boxes(clip) = concat(clip ? [pg_clip_box] : [], [pg_face_btns, pg_side_btn]);
+function pg_boxes(clip, btns = true) = concat(clip ? [pg_clip_box] : [], btns ? [pg_face_btns, pg_side_btn] : []);
 pg_env_boxes = pg_boxes(true);
 
 function box_corners(b) = [for (x = [b[0][0], b[1][0]], y = [b[0][1], b[1][1]],
@@ -46,7 +46,7 @@ module rbox(size, r) {  // rounded in plan, centred
 module gbox(b, g) translate(b[0] - [g, g, g]) cube(b[1] - b[0] + [2*g, 2*g, 2*g]);
 
 // Conservative solid that contains the real pager (STL frame).
-module pager_envelope(clip = true, g = env_grow) {
+module pager_envelope(clip = true, btns = true, g = env_grow) {
     translate([0, 0, pg_zc]) rbox([pg_L + 2*g, pg_W + 2*g, pg_T + 2*g], pg_r + g);
-    for (b = pg_boxes(clip)) gbox(b, g);
+    for (b = pg_boxes(clip, btns)) gbox(b, g);
 }

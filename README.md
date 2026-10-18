@@ -43,9 +43,10 @@ a cheap fit test, and `stl/gasket-<size>.stl`, an optional TPU seal strip.
   - Turn it so its cable leaves at a lower corner, then lay the cable into
     the open channel down the rear face. There is a pocket in the channel
     for an inline adapter of up to 30 × 15 × 10 mm.
-  - There is no built-in finger guard, because one would block the drop-in.
-    Screw a Noctua fan grill (for example NA-FG1) onto the fan if you want
-    one.
+  - Finger guard is optional: screw a Noctua fan grill (NA-FG1 family) onto
+    the fan. The tray fits it on either face, so it can go on whichever side
+    faces outward after a flip. There is no built-in guard, because a fixed
+    one would block the drop-in.
 - **Optional gasket:** press the TPU strip into the groove in the seat's
   lower wall. It seals the one leak path, from the intake duct up the
   Pager's lower edge to the face.

@@ -157,8 +157,10 @@ is a parameter (45° default).
 - Drop-in from above/behind into a slot whose walls capture the frame;
   no screws. Noctua standard frames: 80 × 80, 92 × 92, 120 × 120 mm;
   thickness 25 mm default, parameter for slim (14/15 mm) frames.
-- Fan intake side (outside, rear) has a finger-safe guard/grille with
-  high open area.
+- Finger guard (user decision, 2026-10-18): optional screw-on Noctua grill
+  on the fan itself (the user owns them for 80/92/120). The dock has no
+  built-in guard, because it would block the drop-in. The tray must accept a
+  grill on either face of the fan.
 - **Reversing = physically flipping the fan in the slot** (USB 5 V
   Noctuas can't be reversed electrically). *Builder's call:* the slot is
   symmetric so the fan fits either way round, and the cable path works

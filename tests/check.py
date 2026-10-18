@@ -500,6 +500,20 @@ def test_plenum_sealed():
         assert vols and int(vols[-1]) == 3, "%d: plugged dock has %s volumes (3 = sealed)" % (fs, vols[-1:])
 
 
+@test
+def test_optional_grill_fits():
+    """A screw-on Noctua grill (fan-sized, 2.5 mm incl. screw heads) fits on the outer face,
+    or on the inner face with the fan riding 2.5 mm higher in the tray."""
+    for fs in VARIANTS:
+        d = {"fan_size": fs}
+        grill = "cube([fan_size, fan_size, 2.5], center = false)"
+        outer = ("fan_pose() { fan_envelope(); translate([-fan_size/2, -fan_size/2, fan_t]) %s; }" % grill)
+        inner = ("translate(2.5*rear_n()) fan_pose() { fan_envelope();"
+                 " translate([-fan_size/2, -fan_size/2, -2.5]) %s; }" % grill)
+        for name, e in (("outer", outer), ("inner", inner)):
+            assert is_empty("intersection(){dock(); %s}" % e, d), "%d: grill on %s face interferes" % (fs, name)
+
+
 # ---------------------------------------------------------------- runner
 def main(argv):
     flt = argv[1:]

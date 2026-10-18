@@ -318,7 +318,8 @@ def test_pinch_access():
 
 
 # ---------------------------------------------------------------- task 4
-ROOM_AIR = ["seat_pocket", "end_windows", "exhaust_chamber", "button_notch"]
+ROOM_AIR = ["seat_pocket", "end_windows", "exhaust_chamber", "button_notch",
+            "fan_cable_channel", "pager_cable_guide"]
 
 
 @test
@@ -402,6 +403,66 @@ def test_gasket_groove_cut():
     for fs in VARIANTS:
         assert is_empty("intersection(){dock(); gasket_groove();}", {"fan_size": fs}), \
             "%d: groove not cut" % fs
+
+
+# ---------------------------------------------------------------- task 5
+@test
+def test_cable_channel_open_top():
+    """The fan cable drops in from outside along the whole channel: a slightly narrower
+    probe from the channel floor out along the rear-face normal hits nothing."""
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); fan_cable_channel(probe = true);}", {"fan_size": fs}), \
+            "%d: fan cable channel closed somewhere" % fs
+
+
+@test
+def test_cable_channel_reaches_tray_and_edge():
+    for fs in VARIANTS:
+        d = {"fan_size": fs}
+        _, dst = run_scad("fan_cable_channel();", d)
+        lo, hi = stl_bbox(dst)
+        Dv, tray_lo_z = P("[D, (fan_v0) * sin(seat_angle)]", d)
+        assert hi[1] >= Dv - 0.01 and lo[2] <= 0.01, "%d: channel doesn't exit at the rear-bottom edge" % fs
+        assert hi[2] >= tray_lo_z, "%d: channel doesn't reach the tray" % fs
+
+
+@test
+def test_adapter_pocket():
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); adapter_probe();}", {"fan_size": fs}), \
+            "%d: no room for a 15x10x30 inline adapter" % fs
+
+
+@test
+def test_pager_cable_guide_open():
+    for fs in VARIANTS:
+        assert is_empty("intersection(){dock(); pager_cable_guide(probe = true);}", {"fan_size": fs}), \
+            "%d: pager cable guide closed" % fs
+
+
+@test
+def test_coupon_small():
+    for fs in VARIANTS:
+        d = {"fan_size": fs}
+        _, dst = run_scad("coupon();", d)
+        bb = stl_bbox(dst)
+        assert bb, "%d: coupon empty" % fs
+        lo, hi = bb
+        size = [hi[k] - lo[k] for k in range(3)]
+        cap = P("seat_depth + seat_clear + wall", d)
+        assert all(x <= BED for x in size), size
+        approx(lo[2], 0, 0.01)
+        assert size[2] <= cap + 0.5, "%d: coupon %r taller than the seat cradle" % (fs, size)
+
+
+@test
+def test_gasket_fits_groove():
+    d = {"fan_size": 92}
+    _, dst = run_scad("gasket();", d)
+    assert stl_bbox(dst), "gasket empty"
+    assert is_empty("intersection(){dock(); gasket_seated();}", d), "gasket collides with the dock"
+    assert not is_empty("intersection(){pager_pose() pager_envelope(); gasket_seated();}", d), \
+        "gasket doesn't reach the pager (no seal)"
 
 
 # ---------------------------------------------------------------- runner

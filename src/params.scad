@@ -80,3 +80,13 @@ groove_d = 1.0;
 roof_bridge = top_flat + 2 * wall * tan(22.5);
 // pager-frame Z of the dock's front face
 face_z = pg_zc - pg_T/2 + seat_depth;
+
+// ---- Cables
+ch_w = 7;             // fan cable channel width
+ch_d = 7;             // ...and depth into the rear face
+adapter = [30, 15, 10];  // inline adapter pocket [across, along slope, deep]
+guide_w = 10;         // pager USB cable guide groove on the port-end side face
+guide_d = 5;
+
+// ---- Fit coupon: the seat cradle (face down to the floor), printed face-up
+cradle_t = seat_depth + seat_clear + wall;

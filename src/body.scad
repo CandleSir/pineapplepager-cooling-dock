@@ -27,16 +27,22 @@ module fan_slot() {
 // Pager-frame prism: footprint `b` (2D box [[x0,y0],[x1,y1]]) from z0 out past the face.
 module out_prism(b, z0) translate([b[0][0], b[0][1], z0]) cube([b[1][0] - b[0][0], b[1][1] - b[0][1], 100]);
 
-// Drop-in pocket: pager outline + seat_clear, open to the face, with belt-clip relief.
+// Pocket plan (pager frame): outline + seat_clear, but seat_clear_top on the +Y wall,
+// plus the button reliefs. Shared by the dock and the fit gauge.
+module pocket_plan(g = 0) {
+    c = seat_clear + g;
+    ct = seat_clear_top + g;
+    translate([0, (ct - c)/2])
+        offset(pg_r + c) square([pg_L - 2*pg_r, pg_W - 2*pg_r - (c - ct)], center = true);
+    for (b = [pg_face_btns, pg_side_btn])
+        translate([b[0][0] - c, b[0][1] - c]) square([b[1][0] - b[0][0] + 2*c, b[1][1] - b[0][1] + 2*c]);
+}
+
+// Drop-in pocket, open to the face, with belt-clip relief. Button reliefs run down to
+// the back face so no button ever bears weight.
 // g grows every cut (tests use it to prove wall thickness to the plenum).
 module seat_pocket(g = 0) pager_pose() {
-    c = seat_clear + g;
-    zb = pg_zc - pg_T/2 - c;
-    translate([0, 0, zb]) linear_extrude(100)
-        offset(pg_r + c) square([pg_L - 2*pg_r, pg_W - 2*pg_r], center = true);
-    // button reliefs run down to the back face so no button ever bears weight
-    for (b = [pg_face_btns, pg_side_btn])
-        out_prism([[b[0][0] - c, b[0][1] - c], [b[1][0] + c, b[1][1] + c]], zb);
+    translate([0, 0, pg_zc - pg_T/2 - seat_clear - g]) linear_extrude(100) pocket_plan(g);
     gbox(pg_clip_box, clip_relief + g);
 }
 
@@ -81,7 +87,7 @@ module exhaust_chamber(g = 0) pager_pose() let(v = vent_hi)
         cube([v[1] - v[0] + 2*(vent_margin + g), 1 + seat_clear + exh_w + g, 100]);
 
 module bar_grille() pager_pose() let(v = vent_hi, x0 = v[0] - vent_margin,
-                                      x1 = v[1] + vent_margin, y0 = pg_W/2 + seat_clear) {
+                                      x1 = v[1] + vent_margin, y0 = pg_W/2 + seat_clear_top) {
     translate([x0, y0, face_z - grille_t]) cube([x1 - x0, grille_rim, grille_t]);
     for (x = [x0 + grille_gap : grille_bar + grille_gap : x1 - grille_bar])
         translate([x, y0, face_z - grille_t]) cube([grille_bar, exh_w + 0.01, grille_t]);
@@ -161,6 +167,13 @@ module coupon()
         rotate([seat_angle, 0, 0]) translate([-(pg_L/2 + 10), cradle_t_lo, -cradle_t])
             cube([pg_L + 20, cradle_t_hi - cradle_t_lo, cradle_t]);
     }
+
+// Fit gauge: a collar with the pocket's walls, printed flat. Slide it onto the pager to
+// mid-thickness to feel the seat's fit for a few grams instead of a full coupon.
+module fit_gauge() linear_extrude(gauge_h) difference() {
+    offset(delta = wall) pocket_plan();
+    pocket_plan();
+}
 
 // Optional TPU strip for the -Y wall groove; stands seat_clear + 0.3 proud so it
 // presses on the pager's -Y edge above the duct. Printed flat.

@@ -514,6 +514,52 @@ def test_optional_grill_fits():
             assert is_empty("intersection(){dock(); %s}" % e, d), "%d: grill on %s face interferes" % (fs, name)
 
 
+# ---------------------------------------------------------------- coupon round 1: top-wall play
+def stl_volume(path):
+    return abs(sum(
+        (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
+         + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6.0 for a, b, c in stl_facets(path)))
+
+
+@test
+def test_top_wall_clearance():
+    """Pocket's +Y wall sits seat_clear_top off the pager; the -Y (seal) wall stays at seat_clear.
+    Probes at mid-thickness: +Y between the exhaust and the button notch, -Y beyond the ducts."""
+    d = {"fan_size": 92}
+    g, ct, c = P("[env_grow, seat_clear_top, seat_clear]")
+    assert g < ct < c, "need env_grow < seat_clear_top < seat_clear, got %r" % ([g, ct, c],)
+    hit ="pg_W/2 + seat_clear_top + 0.05", "pg_W/2 + seat_clear_top + 0.3"
+    assert not is_empty("intersection(){dock(); pager_pose() translate([-12, %s, pg_zc - 2])"
+                        " cube([10, %s - (%s), 4]);}" % (hit[0], hit[1], hit[0]), d), \
+        "+Y wall is not seat_clear_top from the pager"
+    assert is_empty("intersection(){dock(); pager_pose() translate([-12, pg_W/2, pg_zc - 2])"
+                    " cube([10, seat_clear_top - 0.05, 4]);}", d), "+Y wall closer than seat_clear_top"
+    assert not is_empty("intersection(){dock(); pager_pose() translate([30, -pg_W/2 - seat_clear - 0.3,"
+                        " pg_zc - 2]) cube([4, 0.25, 4]);}", d), "-Y wall moved out"
+    assert is_empty("intersection(){dock(); pager_pose() translate([30, -pg_W/2 - seat_clear + 0.05,"
+                    " pg_zc - 2]) cube([4, seat_clear - 0.05, 4]);}", d), "-Y wall moved in"
+
+
+@test
+def test_fit_gauge():
+    """The gauge collar is the dock pocket's outline: the pager passes, its walls sit at the
+    pocket's clearances, and it costs a fraction of the coupon's filament."""
+    _, g = run_scad("fit_gauge();")
+    bb = stl_bbox(g)
+    assert bb, "gauge empty"
+    approx(bb[0][2], 0, 0.01)
+    approx(bb[1][2], P("gauge_h"), 0.01)
+    mid = "translate([0, 0, gauge_h/2 - pg_zc])"
+    assert is_empty("intersection(){fit_gauge(); %s pager_envelope(true);}" % mid), "pager doesn't pass"
+    for y0, y1, side in (("pg_W/2 + seat_clear_top + 0.05", "pg_W/2 + seat_clear_top + 0.3", "+Y"),
+                         ("-pg_W/2 - seat_clear - 0.3", "-pg_W/2 - seat_clear - 0.05", "-Y")):
+        assert not is_empty("intersection(){fit_gauge(); translate([30, %s, 0]) cube([4, %s - (%s), 1]);}"
+                            % (y0, y1, y0)), "%s wall not at the pocket clearance" % side
+    _, c = run_scad("coupon();", {"fan_size": 80})
+    assert stl_volume(g) < 0.2 * stl_volume(c), "gauge %.1f cm3 vs coupon %.1f cm3" % (
+        stl_volume(g) / 1000, stl_volume(c) / 1000)
+
+
 # ---------------------------------------------------------------- runner
 def main(argv):
     flt = argv[1:]

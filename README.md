@@ -29,6 +29,8 @@ Flip the fan over to run the same path under negative pressure.
 
 Each variant also has `stl/coupon-<size>.stl`, the seat cradle on its own for
 a cheap fit test, and `stl/gasket-<size>.stl`, an optional TPU seal strip.
+`stl/fit-gauge.stl` is an 8 mm collar with the seat pocket's walls, the same for
+every variant; use it to retune the fit for a few grams of filament.
 
 ## Using it
 
@@ -61,6 +63,10 @@ a cheap fit test, and `stl/gasket-<size>.stl`, an optional TPU seal strip.
   - Use 3 or more walls. Infill to taste; it's mostly hollow.
 - **Coupon:** prints face up, flat. Print it first to check the fit and the
   vent alignment before printing the full dock.
+- **Fit gauge:** prints flat. Slide it onto the Pager to the middle of its
+  edge, with the bump over the side button. The long wall with the bump is the
+  top wall (`seat_clear_top`); the other walls use `seat_clear`. Retune with
+  `-D seat_clear_top=…` and reprint the gauge, not the coupon.
 - **Gasket:** TPU from the external spool, flat, 100% infill.
 
 ## Check with calipers before the full print

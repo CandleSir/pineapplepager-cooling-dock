@@ -13,7 +13,7 @@ all: test stl previews
 test:
 	$(PY) tests/check.py
 
-stl: $(STLS)
+stl: $(STLS) stl/fit-gauge.stl
 previews: $(PNGS)
 
 SRC := $(wildcard src/*.scad)
@@ -21,6 +21,10 @@ SRC := $(wildcard src/*.scad)
 stl/%.stl: $(SRC)
 	@mkdir -p stl
 	$(SCAD) -o $@ -D 'part="$(word 1,$(subst -, ,$*))"' -D fan_size=$(word 2,$(subst -, ,$*)) -D '$$fn=$(FN)' src/dock.scad
+
+stl/fit-gauge.stl: $(SRC)
+	@mkdir -p stl
+	$(SCAD) -o $@ -D 'part="gauge"' -D '$$fn=$(FN)' src/dock.scad
 
 previews/front-%.png: $(SRC) tools/preview.scad
 	@mkdir -p previews

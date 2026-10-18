@@ -28,7 +28,8 @@ port_end_sign = -1;   // VERIFY  USB-C + USB-A are on the -X end
 port_centres = [[-11.4, 0.45], [12.0, 1.1]];                  // VERIFY BY CALIPER  [y, z] of the two ports
 
 // ---- Envelope / fit
-env_grow = 0.3;       // envelope grows this much past measured geometry
+env_grow = 0.1;       // envelope grows this much past the reference mesh (coupon 1 confirmed
+                      // the real outline matches it; must stay < seat_clear_top)
 
 // ---- Seat placement
 seat_angle = 45;      // degrees from horizontal
@@ -49,7 +50,9 @@ $fn = 48;
 fan_clear = 0.6;      // per side, fan in its tray
 fan_ledge = 3;        // inner ledge the fan frame rests on
 fan_nub = [8, 4, 6];  // cable strain-relief bump on the frame edge [along, out, thick]
-seat_clear = 0.5;     // per side, pager in its pocket
+seat_clear = 0.5;     // per side, pager in its pocket (ends and the -Y seal wall)
+seat_clear_top = 0.15;  // +Y wall only: gravity seats the pager on the -Y wall, so all
+                        // the play gathered here (coupon 1 rattled ~1 mm); 0.15 takes it out
 clip_relief = 1.0;    // extra room around the belt clip
 win_inset = 3;         // end windows stop this far short of the long edges
 side_margin = 4;
@@ -97,3 +100,4 @@ guide_d = 5;
 
 // ---- Fit coupon: the seat cradle (face down to the floor), printed face-up
 cradle_t = seat_depth + seat_clear + wall;
+gauge_h = 8;          // fit gauge: a collar of the pocket outline, slid onto the pager

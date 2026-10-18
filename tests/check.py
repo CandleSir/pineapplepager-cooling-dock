@@ -431,6 +431,10 @@ def test_adapter_pocket():
     for fs in VARIANTS:
         assert is_empty("intersection(){dock(); adapter_probe();}", {"fan_size": fs}), \
             "%d: no room for a 15x10x30 inline adapter" % fs
+        # the pocket runs out through the rear-bottom edge (no thin sliver left at the edge)
+        assert is_empty("intersection(){dock(); rear_frame() translate([adapter_at[0] - adapter[0]/2 + 0.2,"
+                        " -2, -adapter[2] + 0.2]) cube([adapter[0] - 0.4, 4, 40]);}", {"fan_size": fs}), \
+            "%d: sliver of wall left below the adapter pocket" % fs
 
 
 @test

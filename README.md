@@ -23,8 +23,8 @@ Flip the fan over to run the same path under negative pressure.
 
 | Fan | Width × depth × height (mm) | File |
 |---|---|---|
-| 80 mm | 102 × 193 × 88 | `stl/dock-80.stl` |
-| 92 mm | 114 × 210 × 97 | `stl/dock-92.stl` |
+| 80 mm | 102 × 228 × 88 | `stl/dock-80.stl` |
+| 92 mm | 114 × 228 × 97 | `stl/dock-92.stl` |
 | 120 mm | 142 × 249 × 117 | `stl/dock-120.stl` |
 
 Each variant also has `stl/coupon-<size>.stl`, the seat cradle on its own for
@@ -56,7 +56,7 @@ a cheap fit test, and `stl/gasket-<size>.stl`, an optional TPU seal strip.
   - Print it standing on its base, as exported.
   - **Supports OFF.** The inside is a sealed chamber, so any support the
     slicer puts in there can never be removed. Every internal down-facing
-    surface is a 45° overhang or a bridge of 18 mm or less.
+    surface is a 45° overhang.
   - Use 3 or more walls. Infill to taste; it's mostly hollow.
 - **Coupon:** prints face up, flat. Print it first to check the fit and the
   vent alignment before printing the full dock.

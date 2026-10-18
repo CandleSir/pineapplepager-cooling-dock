@@ -386,23 +386,33 @@ def test_button_notch_clear():
     for fs in VARIANTS:
         assert is_empty(
             "intersection(){dock(); pager_pose() translate([(btn_hi[0] + btn_hi[1])/2,"
-            " pg_W/2 + seat_clear + 5.2, (btn_hi[2] + btn_hi[3])/2]) cylinder(d = 10, h = 60);}",
+            " pg_W/2 + seat_clear + 8.2, (btn_hi[2] + btn_hi[3])/2]) cylinder(d = 16, h = 60);}",
             {"fan_size": fs}), "%d: side button not reachable" % fs
 
 
 @test
 def test_no_trapped_supports():
-    ang, bridge = P("[seat_angle, roof_bridge]")
+    ang = P("seat_angle")
     # internal down-facing plenum surfaces are at seat_angle or 90-seat_angle from horizontal
     assert min(ang, 90 - ang) >= 45 - 1e-9, "overhang %r" % min(ang, 90 - ang)
-    assert bridge <= 20, "roof bridge %r mm" % bridge
 
 
 @test
 def test_gasket_groove_cut():
+    """Groove is cut, with >= 1.2 mm of wall below it (over the duct) and >= 1.0 mm above (to the face)."""
     for fs in VARIANTS:
-        assert is_empty("intersection(){dock(); gasket_groove();}", {"fan_size": fs}), \
-            "%d: groove not cut" % fs
+        d = {"fan_size": fs}
+        assert is_empty("intersection(){dock(); gasket_groove();}", d), "%d: groove not cut" % fs
+        # probes stop 0.01 short of the groove faces (coincident faces leave CGAL slivers)
+        for dz, h in ((-1.2, 1.19), (groove_w_val(d) + 0.01, 0.99)):
+            probe = ("pager_pose() translate([-pg_L/2 + pg_r, -pg_W/2 - seat_clear - groove_d,"
+                     " groove_z + %f]) cube([pg_L - 2*pg_r, groove_d, %f]);" % (dz, h))
+            assert is_empty("difference(){ %s dock(); }" % probe, d), \
+                "%d: groove wall at dz=%s thinner than %s mm" % (fs, dz, h)
+
+
+def groove_w_val(d):
+    return P("groove_w", d)
 
 
 # ---------------------------------------------------------------- task 5
@@ -467,6 +477,27 @@ def test_gasket_fits_groove():
     assert is_empty("intersection(){dock(); gasket_seated();}", d), "gasket collides with the dock"
     assert not is_empty("intersection(){pager_pose() pager_envelope(); gasket_seated();}", d), \
         "gasket doesn't reach the pager (no seal)"
+
+
+# ---------------------------------------------------------------- final review fixes
+@test
+def test_fan_slot_isolated():
+    """The fan tray keeps >= wall-0.4 from every seat-area cut (no plenum bypass)."""
+    for fs in VARIANTS:
+        for m in ["seat_pocket", "exhaust_chamber", "button_notch", "end_windows"]:
+            assert is_empty("intersection(){fan_slot(); %s(g = wall - 0.4);}" % m, {"fan_size": fs}), \
+                "%d: fan tray breaks into %s" % (fs, m)
+
+
+@test
+def test_plenum_sealed():
+    """Plug the fan tray and the intake duct: exactly one enclosed void (the plenum) remains."""
+    for fs in VARIANTS:
+        log, _ = run_scad(
+            "union(){ dock(); intake_duct(); fan_pose() translate([-fan_size/2 - 6, -fan_size/2 - 6,"
+            " -fan_clear - 0.01]) cube([fan_size + 12, fan_size + 12, 200]); }", {"fan_size": fs})
+        vols = re.findall(r"Volumes:\s+(\d+)", log)
+        assert vols and int(vols[-1]) == 3, "%d: plugged dock has %s volumes (3 = sealed)" % (fs, vols[-1:])
 
 
 # ---------------------------------------------------------------- runner

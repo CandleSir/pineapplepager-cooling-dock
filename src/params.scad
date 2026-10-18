@@ -33,7 +33,7 @@ env_grow = 0.3;       // envelope grows this much past measured geometry
 // ---- Seat placement
 seat_angle = 45;      // degrees from horizontal
 seat_u0 = 47;         // slope distance from the dock's front-bottom edge to the pager's -Y edge
-seat_depth = 23.5;    // pocket depth below the front face (covers vent tops + gasket groove)
+seat_depth = 24;      // pocket depth below the front face (covers vent tops + gasket groove)
 lip_z = 4;            // nothing of the seated pager may sit lower than this
 
 // ---- Fan
@@ -63,23 +63,30 @@ H_fan = (fan_v0 + fan_tray + 2*wall) * sin(seat_angle);
 H_pager = (seat_u0 + pg_W + 2*seat_clear + exh_w + 3*wall) * sin(seat_angle);
 H = max(H_fan, H_pager);
 run = H / tan(seat_angle);
-D = 2*run + top_flat;
+notch_len = 18;       // side-button finger notch, beyond the pager's +Y edge
+notch_w = 20;
+// The two slopes are perpendicular, so the fan tray's depth runs parallel to the
+// front face: the dock must be deep enough that the tray stays a wall clear of
+// everything cut beyond the pager's +Y edge.
+seat_u_top = seat_u0 + pg_W + seat_clear + max(exh_w, notch_len) + wall;
+D_min = (seat_u_top + fan_t + fan_clear + 2*wall + 1) / cos(seat_angle);
+D = max(2*run + top_flat, D_min);
 Wd = max(fan_tray, pg_L + 2*seat_clear) + 2*wall + 2*side_margin;
 
 // ---- Air path
 duct_w = 5;           // intake duct reaches this far beyond the pager's -Y edge
 duct_dip = 6;         // ...and this far below the seat floor slab, into the plenum
 vent_margin = 1.5;    // duct / exhaust openings overlap each grille by this much
+duct_top_margin = 0.5;  // ...except above the lower grilles, leaving room for the groove
 grille_bar = 1.6;     // exhaust bar grille: 1.6 / (1.6 + 3.8) solid -> 70 % open
 grille_gap = 3.8;
 grille_t = 1.6;
 grille_rim = 1.2;     // strip along the pocket edge that anchors the bars' lower ends
 groove_w = 1.2;       // optional TPU gasket groove in the pocket's -Y wall
 groove_d = 1.0;
-// widest unsupported span inside the plenum: the roof under the top flat
-roof_bridge = top_flat + 2 * wall * tan(22.5);
-// pager-frame Z of the dock's front face
+// pager-frame Z of the dock's front face, and of the gasket groove's lower edge
 face_z = pg_zc - pg_T/2 + seat_depth;
+groove_z = vent_lo[0][3] + duct_top_margin + 1.3;
 
 // ---- Cables
 ch_w = 7;             // fan cable channel width

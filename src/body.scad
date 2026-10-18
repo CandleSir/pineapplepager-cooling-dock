@@ -72,7 +72,7 @@ module intake_duct() pager_pose()
     for (v = vent_lo) {
         zb = pg_zc - pg_T/2 - seat_clear - wall - duct_dip;
         translate([v[0] - vent_margin, -pg_W/2 - duct_w, zb])
-            cube([v[1] - v[0] + 2*vent_margin, duct_w + 1, v[3] + vent_margin - zb]);
+            cube([v[1] - v[0] + 2*vent_margin, duct_w + 1, v[3] + duct_top_margin - zb]);
     }
 
 // Pager -> room: chamber beyond the +Y grille, open to the face under the bar grille.
@@ -89,12 +89,12 @@ module bar_grille() pager_pose() let(v = vent_hi, x0 = v[0] - vent_margin,
 
 // Finger notch over the +Y side button.
 module button_notch(g = 0) pager_pose() let(cx = (btn_hi[0] + btn_hi[1])/2)
-    translate([cx - 7 - g, pg_W/2 - 1, btn_hi[2] - 3 - g])
-        cube([14 + 2*g, 1 + seat_clear + 11 + g, 100]);
+    translate([cx - notch_w/2 - g, pg_W/2 - 1, btn_hi[2] - 3 - g])
+        cube([notch_w + 2*g, 1 + seat_clear + notch_len + g, 100]);
 
 // Optional TPU lip seats in this groove in the pocket's -Y wall, above the duct.
 module gasket_groove() pager_pose()
-    translate([-pg_L/2 + pg_r, -pg_W/2 - seat_clear - groove_d, vent_lo[0][3] + vent_margin + 0.3])
+    translate([-pg_L/2 + pg_r, -pg_W/2 - seat_clear - groove_d, groove_z])
         cube([pg_L - 2*pg_r, groove_d + 0.01, groove_w]);
 
 // Rear-face frame: x across, y up the rear slope from the rear-bottom edge, z out of the face.
@@ -154,7 +154,7 @@ module dock() {
 }
 // Seat cradle from the face down to the floor, laid flat (face up) for printing.
 cradle_t_lo = seat_u0 - duct_w - wall - 3;
-cradle_t_hi = seat_u0 + pg_W + seat_clear + 11 + wall + 3;
+cradle_t_hi = seat_u0 + pg_W + seat_clear + notch_len + wall + 3;
 module coupon()
     translate([0, -cradle_t_lo, cradle_t]) rotate([-seat_angle, 0, 0]) intersection() {
         dock();
@@ -168,5 +168,5 @@ gasket_len = pg_L - 2*pg_r - 0.4;
 gasket_d = groove_d + seat_clear + 0.3;
 module gasket() cube([gasket_len, gasket_d, groove_w - 0.1]);
 module gasket_seated() pager_pose()
-    translate([-pg_L/2 + pg_r + 0.2, -pg_W/2 - seat_clear - groove_d, vent_lo[0][3] + vent_margin + 0.3 + 0.05])
+    translate([-pg_L/2 + pg_r + 0.2, -pg_W/2 - seat_clear - groove_d + 0.05, groove_z + 0.05])
         gasket();

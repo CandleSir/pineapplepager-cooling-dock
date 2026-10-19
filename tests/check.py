@@ -24,6 +24,15 @@ REPO = Path(__file__).resolve().parent.parent
 LIB = REPO / "src" / "lib.scad"
 REF_STL = REPO / "hak5-wifi-pineapple-pager.stl"
 VARIANTS = [80, 92, 120]
+V2 = [(60, 15), (60, 25), (40, 10), (40, 20)]
+
+
+def vd(v):
+    return {"fan_size": v[0], "fan_t": v[1]}
+
+
+def tag(v):
+    return "%dx%d" % v
 BED = 256.0
 
 
@@ -624,6 +633,41 @@ def test_fit_gauge():
     _, c = run_scad("coupon();", {"fan_size": 80})
     assert stl_volume(g) < 0.2 * stl_volume(c), "gauge %.1f cm3 vs coupon %.1f cm3" % (
         stl_volume(g) / 1000, stl_volume(c) / 1000)
+
+
+# ---------------------------------------------------------------- v0.2 task 1: tilted fan frame
+@test
+def test_fan_faces_back_tilted():
+    n, u, t = P("[fan_n(), fan_u(), fan_tilt]")
+    approx(t, 15, 0)
+    a = math.radians(15)
+    for got, want in ((n, [0, math.cos(a), math.sin(a)]), (u, [0, -math.sin(a), math.cos(a)])):
+        for k in range(3):
+            approx(got[k], want[k], 1e-6)
+
+
+@test
+def test_fan_clear_of_seat_cuts():
+    """The slot's inner face plane sits >= wall + 0.5 behind every seat-cut corner along fan_n."""
+    for v in V2:
+        pn, ext, w = P("[fan_origin() * fan_n(), seat_ext(), wall]", vd(v))
+        assert pn - ext >= w + 0.5 - 1e-6, "%s: %.2f behind seat cuts" % (tag(v), pn - ext)
+
+
+@test
+def test_hole_under_slab():
+    """The hole's top (+1 mm), on the chamber side of the land, is >= 1 mm behind the seat slab."""
+    for v in V2:
+        d, sd = P("[(fan_origin() + (hole_r + 1)*fan_u() - wall*fan_n()) * [0, sin(seat_angle), -cos(seat_angle)],"
+                  " slab_d]", vd(v))
+        assert d >= sd + 1 - 1e-6, "%s: hole top only %.2f behind the face" % (tag(v), d)
+
+
+@test
+def test_housing_on_desk():
+    for v in V2:
+        zs = P("[for (k = housing_corners()) k[2]]", vd(v))
+        approx(min(zs), 0, 1e-6)
 
 
 # ---------------------------------------------------------------- runner

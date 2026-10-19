@@ -37,18 +37,20 @@ seat_u0 = 47;         // slope distance from the dock's front-bottom edge to the
 seat_depth = 24;      // pocket depth below the front face (covers vent tops + gasket groove)
 lip_z = 4;            // nothing of the seated pager may sit lower than this
 
-// ---- Fan
-fan_size = 120;       // 80 | 92 | 120
-fan_t = 25;
-fan_hole = fan_size == 80 ? 71.5 : fan_size == 92 ? 82.5 : 105;  // reference only
+// ---- Fan (5 V USB Noctua): 60x15, 60x25, 40x10, 40x20
+fan_size = 60;        // 40 | 60
+fan_t = 25;           // 10 | 15 | 20 | 25
+fan_tilt = 15;        // degrees back from vertical: faces back and up, top leaning forward
 
 // ---- General
 wall = 2.4;
 $fn = 48;
 
 // ---- Derived body geometry (dock frame: X across, -Y toward user, Z up)
-fan_clear = 0.6;      // per side, fan in its tray
-fan_ledge = 3;        // inner ledge the fan frame rests on
+fan_clear = 0.3;      // per side, fan in its slot
+fan_clear_z = 0.5;    // slack front-to-back, fan + filter stack between land and lips
+fan_ledge = 3;        // land around the air hole that the fan frame seals against
+fan_lip = 3;          // rear lips hold the filter stack in the slot
 fan_nub = [8, 4, 6];  // cable strain-relief bump on the frame edge [along, out, thick]
 seat_clear = 0.5;     // per side, pager in its pocket (ends and the -Y seal wall)
 seat_clear_top = 0.15;  // +Y wall only: gravity seats the pager on the -Y wall, so all
@@ -56,25 +58,27 @@ seat_clear_top = 0.15;  // +Y wall only: gravity seats the pager on the -Y wall,
 clip_relief = 1.0;    // extra room around the belt clip
 win_inset = 3;         // end windows stop this far short of the long edges
 side_margin = 4;
-top_flat = 16;        // also keeps the fan opening clear of the seat floor slab
 exh_w = 6;            // exhaust slot beyond the pager's +Y edge (along the slope)
-fan_tray = fan_size + 2*fan_clear + 2*fan_nub[1];
-// slope distance from the rear-bottom edge to the tray's lower wall: keeps the
-// tray's inner bottom corner a wall above the desk
-fan_v0 = (wall + (fan_t + wall) * cos(seat_angle)) / sin(seat_angle);
-H_fan = (fan_v0 + fan_tray + 2*wall) * sin(seat_angle);
-H_pager = (seat_u0 + pg_W + 2*seat_clear + exh_w + 3*wall) * sin(seat_angle);
-H = max(H_fan, H_pager);
-run = H / tan(seat_angle);
 notch_len = 18;       // side-button finger notch, beyond the pager's +Y edge
 notch_w = 20;
-// The two slopes are perpendicular, so the fan tray's depth runs parallel to the
-// front face: the dock must be deep enough that the tray stays a wall clear of
-// everything cut beyond the pager's +Y edge.
 seat_u_top = seat_u0 + pg_W + seat_clear + max(exh_w, notch_len) + wall;
-D_min = (seat_u_top + fan_t + fan_clear + 2*wall + 1) / cos(seat_angle);
-D = max(2*run + top_flat, D_min);
-Wd = max(fan_tray, pg_L + 2*seat_clear) + 2*wall + 2*side_margin;
+H = seat_u_top * sin(seat_angle);   // the seat sets the height now
+Wd = pg_L + 2*seat_clear + 2*wall + 2*side_margin;
+slab_d = seat_depth + seat_clear + wall;  // seat slab, face to its back
+
+// ---- Fan slot and filter
+frame_t = 1.6;        // each filter frame
+filter_gap = 0.6;     // MERV 8 media clamped between the frames
+filter_border = 4;    // frame border, wider than fan_lip so the lips bear on it
+grid_bar = 1.2;       // fan-side grid keeps the media out of the blades
+grid_pitch = 8;       // (8 - 1.2)^2 / 8^2 -> 72 % open
+peg_d = 2;            // corner pegs on the grid frame...
+peg_fit = 0.2;        // ...into cap holes this much bigger
+filter_stack = 2*frame_t + filter_gap;
+slot_depth = fan_t + filter_stack + fan_clear_z;
+hole_r = fan_size/2 - fan_ledge;
+relief = fan_clear + fan_nub[1] + 0.5;  // cable-bump room beyond the frame at the lower corners
+hx = fan_size/2 + relief + wall;        // housing half-width (and depth below the fan centre)
 
 // ---- Air path
 duct_w = 5;           // intake duct reaches this far beyond the pager's -Y edge
@@ -92,9 +96,6 @@ face_z = pg_zc - pg_T/2 + seat_depth;
 groove_z = vent_lo[0][3] + duct_top_margin + 1.3;
 
 // ---- Cables
-ch_w = 7;             // fan cable channel width
-ch_d = 7;             // ...and depth into the rear face
-adapter = [30, 15, 10];  // inline adapter pocket [across, along slope, deep]
 guide_w = 10;         // pager USB cable guide groove on the port-end side face
 guide_d = 5;
 
@@ -104,5 +105,5 @@ gauge_h = 8;          // fit gauge: a collar of the pocket outline, slid onto th
 
 // ---- Printing (standing on the base, supports OFF)
 bridge_max = 25;      // longest span the slicer may bridge
-rib_w = 1.2;          // designed-in supports: ribs across the fan air opening, posts
-                      // under the clip pocket's wall (two 0.45 mm lines + margin)
+rib_w = 1.2;          // designed-in supports: posts under the clip pocket's wall
+                      // (two 0.45 mm lines + margin)

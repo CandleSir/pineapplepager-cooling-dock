@@ -133,7 +133,6 @@ module rear_frame() multmatrix([[1, 0, 0, 0],
 // ever has to pass through a hole.
 function cable_path(sx) = let(x0 = sx * (fan_size/2 - 10))
     [[x0, fan_v0 + 6], [x0, 0.65 * fan_v0], [x0 - sx * 9, 0.45 * fan_v0], [x0 - sx * 9, -ch_w]];
-adapter_at = [fan_size/2 - 19, adapter[1]/2 - 2];   // [x, v] centre, on the +x channel, open through the edge
 
 module fan_cable_channel(g = 0, probe = false) rear_frame() {
     w = probe ? ch_w - 1 : ch_w + 2*g;

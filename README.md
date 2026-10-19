@@ -1,76 +1,111 @@
 # pinepager-desk-cooling-dock
 
 A one-piece, 3D-printable desk dock for the Hak5 WiFi Pineapple Pager. It
-holds the Pager face-up at 45° and uses a Noctua fan to push (or pull) air
-*through* the Pager's own vents. It's built for long, plugged-in homelab
+holds the Pager face-up at 45° and uses a small Noctua fan to push (or pull)
+air *through* the Pager's own vents. It's built for long, plugged-in homelab
 sessions.
 
 Air path:
 
-1. Air enters through the fan tray on the rear slope.
-2. It fills a sealed chamber inside the dock.
-3. An intake duct carries it to the two grilles on the Pager's lower (button)
-   edge, and it passes through the Pager.
+1. The fan stands upright at the back, facing back and tilted up 15°, with an
+   optional dust filter on its outer face.
+2. Air goes through a teardrop hole in the wall in front of the fan, into a
+   short chamber under the seat.
+3. The chamber feeds an intake duct at the two grilles on the Pager's lower
+   (button) edge, and the air passes through the Pager.
 4. It leaves through the upper-edge grille, under the bar grille, and through
    the end vent's open side window.
 
 Flip the fan over to run the same path under negative pressure.
 
-![front](previews/front-92.png) ![rear](previews/rear-92.png)
-![section through the right-hand grille: fan blue, pager red](previews/section-92.png)
+![front](previews/front-60x25.png) ![rear](previews/rear-60x25.png)
+![section through the right-hand grille: fan blue, pager red](previews/section-60x25.png)
 
 ## Variants
 
+One per fan. All are 5 V USB Noctuas:
+
 | Fan | Width × depth × height (mm) | File |
 |---|---|---|
-| 80 mm | 102 × 228 × 88 | `stl/dock-80.stl` |
-| 92 mm | 114 × 228 × 97 | `stl/dock-92.stl` |
-| 120 mm | 142 × 249 × 117 | `stl/dock-120.stl` |
+| NF-A6x15 (60 × 15) | 101 × 147 × 92 | `stl/dock-60x15.stl` |
+| NF-A6x25 (60 × 25) | 101 × 156 × 92 | `stl/dock-60x25.stl` |
+| NF-A4x10 (40 × 10) | 101 × 142 × 92 | `stl/dock-40x10.stl` |
+| NF-A4x20 (40 × 20) | 101 × 151 × 92 | `stl/dock-40x20.stl` |
 
-Each variant also has `stl/coupon-<size>.stl`, the seat cradle on its own for
-a cheap fit test, and `stl/gasket-<size>.stl`, an optional TPU seal strip.
-`stl/fit-gauge.stl` is an 8 mm collar with the seat pocket's walls, the same for
-every variant; use it to retune the fit for a few grams of filament.
+The 80, 92 and 120 mm versions are in the `v0.1.0` tag.
+
+Other parts:
+
+| File | What it's for |
+|---|---|
+| `stl/filter-grid-{40,60}.stl`, `stl/filter-cap-{40,60}.stl` | Filter frames, one pair per fan size |
+| `stl/fan-gauge-{40,60}.stl` | The bottom of the fan slot, for checking the fan's fit before a full dock |
+| `stl/fit-gauge.stl` | A collar with the seat pocket's walls, for checking the Pager's fit |
+| `stl/coupon.stl` | The full seat cradle on its own |
+| `stl/gasket.stl` | Optional TPU seal strip for the seat's lower wall |
 
 ## Using it
 
-- **Pager:** drop it in face up. The belt clip can stay on or come off;
-  both seat correctly. To lift it out, pinch either short end through the
-  open side windows.
-- **USB ports:** the port end is fully open, so fat plugs and thumb drives
-  fit. Grooves on that side face guide the cables down to the desk.
-- **Fan:** any standard Noctua 80/92/120 frame, 25 mm thick (15 mm slim
-  frames also fit). It drops into the rear tray from above and rests on an
-  inner ledge, held by gravity. No screws.
-  - Turn it so its cable leaves at a lower corner, then lay the cable into
-    the open channel down the rear face. There is a pocket in the channel
-    for an inline adapter of up to 30 × 15 × 10 mm.
-  - Finger guard is optional: screw a Noctua fan grill (NA-FG1 family) onto
-    the fan. The tray fits it on either face, so it can go on whichever side
-    faces outward after a flip. There is no built-in guard, because a fixed
-    one would block the drop-in.
-- **Optional gasket:** press the TPU strip into the groove in the seat's
-  lower wall. It seals the one leak path, from the intake duct up the
-  Pager's lower edge to the face.
+- **Pager:** drop it in face up. The belt clip can stay on or come off; both
+  seat correctly. To lift it out, pinch either short end through the open side
+  windows.
+- **USB ports:** the port end is fully open, so fat plugs and thumb drives fit.
+  Grooves on that side face guide the cables down to the desk.
+- **Fan:** it drops into the slot from above, so it sits upright against the
+  wall with the air hole. Gravity leans it onto that wall, which seals it.
+  - No screws are needed.
+  - Turn it so its cable leaves at a lower corner. The cable goes straight out
+    the back there, at desk level. An inline adapter just lies on the desk
+    behind the dock.
+  - Flip the fan over for pull mode, and its cable comes out of the other lower
+    corner.
+
+## Dust filter (push mode)
+
+In push mode, every bit of air reaching the Pager comes through the fan first.
+A filter on the fan's outer face therefore cleans all of it, and the dust ends
+up on a square you replace instead of inside the Pager. The filter is two thin
+frames with a square of MERV 8 furnace-filter media between them.
+
+1. **Cut the media.** Cut a pleated panel out of a MERV 8 furnace filter and pull
+   it flat. Cut squares from the flat stretches between folds:
+   - 39 mm for the 40 mm fans;
+   - 59 mm for the 60 mm fans.
+
+   If the thin backing mesh peels off easily, remove it. If not, keep it and put
+   it on the fan side.
+2. **Load it.** Lay the square on the grid frame and press it down over the four
+   corner pegs. Press the cap on until the pegs come through its holes.
+3. **Install it.** Lift the fan out. Slide the filter stack down the back of
+   the slot, behind the lips' edge, with the grid facing forward toward where
+   the fan sits. Then drop the fan back in front of it. The lips at the back
+   of the slot hold it all in place.
+4. **Without a filter**, snap the two frames together empty and use them as a
+   spacer, so the fan can't walk off its wall.
+5. **In pull mode**, leave the filter out; it would be on the exhaust side.
+
+Replace the media every few months, or when it looks grey. The grid also works
+as a finger guard in push mode.
 
 ## Printing (Bambu P1S, Bambu PLA Matte)
 
 - **Dock:**
   - Print it standing on its base, as exported.
-  - **Supports OFF.** The inside is a sealed chamber, so any support the
-    slicer puts in there can never be removed. The supports are designed in
-    instead: thin ribs across the fan's air opening and small posts under the
-    belt-clip pocket. No bridge is longer than 25 mm and every other internal
-    overhang is 45°. Bambu Studio may still flag the short bridges; they print
-    fine.
-  - Use 3 or more walls. Infill to taste; it's mostly hollow.
-- **Coupon:** prints face up, flat. Print it first to check the fit and the
-  vent alignment before printing the full dock.
-- **Fit gauge:** prints flat. Slide it onto the Pager to the middle of its
-  edge, with the bump over the side button. The long wall with the bump is the
-  top wall (`seat_clear_top`); the other walls use `seat_clear`. Retune with
-  `-D seat_clear_top=…` and reprint the gauge, not the coupon.
-- **Gasket:** TPU from the external spool, flat, 100% infill.
+  - **Supports OFF.** The chamber inside is closed, so any support printed in
+    there can never come out. Every internal overhang is 45° or steeper, and no
+    bridge is longer than 25 mm. Bambu Studio may still flag the short bridges;
+    they print fine.
+  - **Infill: about 10 %.** Only the air path is modelled hollow. The rest of
+    the body behind the seat is solid in the model and prints as sparse infill,
+    so a low infill keeps the filament down. Use 3 or more walls.
+- **Filter frames:** print flat, grid side down.
+- **Fan gauge:** prints upright, as exported. Drop the fan in. It should slide
+  down without forcing and sit flat against the wall without rocking.
+- **Seat checks:**
+  - `fit-gauge.stl` prints flat. Slide it onto the Pager to the middle of its
+    edge, with the bump over the side button.
+  - `coupon.stl` prints face up, flat.
+- **Gasket:** TPU from the external spool, flat, 100 % infill.
 
 ## Check with calipers before the full print
 
@@ -87,7 +122,7 @@ device:
 Override any value without editing files:
 
 ```sh
-openscad -D fan_size=92 -D pg_T=24.8 -D 'part="dock"' -o dock.stl src/dock.scad
+openscad -D fan_size=60 -D fan_t=25 -D fan_clear=0.35 -D 'part="dock"' -o dock.stl src/dock.scad
 ```
 
 ## Building
@@ -95,9 +130,9 @@ openscad -D fan_size=92 -D pg_T=24.8 -D 'part="dock"' -o dock.stl src/dock.scad
 Requires OpenSCAD (2021.01 is fine) and Python 3.
 
 ```sh
-make test       # geometry tests: fit, clearances, air path, leaks, cables
-make stl        # stl/{dock,coupon,gasket}-{80,92,120}.stl
-make previews   # previews/{front,rear,section}-{80,92,120}.png
+make test       # geometry tests: fit, clearances, air path, leaks, bridges
+make stl        # every part in stl/
+make previews   # previews/{front,rear,section}-<variant>.png
 ```
 
 ## Testing the cooling
@@ -105,11 +140,12 @@ make previews   # previews/{front,rear,section}-{80,92,120}.png
 Run the same sustained load for the same time in each of these setups:
 - undocked;
 - docked with the fan off;
-- docked with the fan on, pushing;
+- docked with the fan on, pushing, with and without the filter;
 - docked with the fan on, pulling.
 
-Compare the Pager's temperature over SSH (`cat /sys/class/thermal/thermal_zone*/temp`).
-For a quick airflow check, hold a tissue strip over the upper grille.
+Compare the Pager's temperature over SSH (`cat /sys/class/thermal/thermal_zone*/temp`)
+or with a thermal camera. For a quick airflow check, hold a tissue strip over
+the upper grille.
 
 ## Credits
 

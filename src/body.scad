@@ -35,9 +35,15 @@ module slot_local(g = 0, hole = true) {
     w = fan_size/2 - fan_lip + g;
     translate([-w, -w, slot_depth - 0.01]) cube([2*w, 200, 100]);
     r0 = fan_size/2 - 6 - fan_nub[0] - 1;   // inner end of the bump's run along the edge
-    for (m = [0, 1]) mirror([m, 0, 0])
+    for (m = [0, 1]) mirror([m, 0, 0]) {
         translate([r0 - g, -fan_size/2 - relief - g, -g])
             cube([fan_size/2 + relief - r0 + 2*g, fan_size/2 + relief - r0 + 2*g, 100]);
+        // 45 deg roof from the lips' inner edge out, so neither the side wall nor the lips
+        // above the relief are flat shelves (inside the slot it only cuts air)
+        let(x0 = fan_size/2 - fan_lip, x1 = fan_size/2 + relief + g + 0.01, yt = -r0 + g)
+            translate([0, 0, -g]) linear_extrude(100 + g)
+                polygon([[x0, yt - 0.01], [x1, yt - 0.01], [x0, yt + x1 - x0]]);
+    }
     // finger scallops beside the top of the fan and filter, to lift them out
     for (m = [0, 1]) mirror([m, 0, 0])
         translate([fan_size/2 - g, fan_size/2 - grip_h - g, -g])

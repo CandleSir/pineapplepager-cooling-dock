@@ -679,8 +679,11 @@ def test_fan_gauge():
         assert not is_empty("intersection(){ fan_gauge(); translate([fan_size/2 + fan_clear + 0.2,"
                             " -(fan_t - 0.5), hx + gauge_top - 3]) cube([1, fan_t - 1, 1]); }", d), \
             "%d: gauge has no side wall at fan_clear" % fs
-        hanging, _ = bridges(stl_facets(g))
+        hanging, ceilings = bridges(stl_facets(g))
         assert not hanging or max(hanging) <= 25.1, "%d gauge bridges %r" % (fs, max(hanging))
+        # printed standing, supports off: no flat shelf may stick out more than 1 mm
+        shelves = {z: round(w, 1) for z, w in ceilings.items() if w > 1.0}
+        assert not shelves, "%d: gauge has unsupported shelves %r" % (fs, shelves)
 
 
 @test

@@ -673,7 +673,12 @@ def test_fan_gauge():
         _, g = run_scad("fan_gauge();", d)
         lo, hi = stl_bbox(g)
         approx(lo[2], 0, 0.01)
-        assert hi[2] - lo[2] <= P("hx", d) - fs / 2 + 12 + 0.1
+        top = P("gauge_top", d)
+        approx(hi[2] - lo[2], P("hx", d) + top, 0.1)
+        # the gauge must reach the walls that locate the fan, above the corner reliefs
+        assert not is_empty("intersection(){ fan_gauge(); translate([fan_size/2 + fan_clear + 0.2,"
+                            " -(fan_t - 0.5), hx + gauge_top - 3]) cube([1, fan_t - 1, 1]); }", d), \
+            "%d: gauge has no side wall at fan_clear" % fs
         hanging, _ = bridges(stl_facets(g))
         assert not hanging or max(hanging) <= 25.1, "%d gauge bridges %r" % (fs, max(hanging))
 

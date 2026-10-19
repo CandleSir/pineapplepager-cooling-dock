@@ -104,8 +104,11 @@ as a finger guard in push mode.
     the body behind the seat is solid in the model and prints as sparse infill,
     so a low infill keeps the filament down. Use 3 or more walls.
 - **Filter frames:** print flat, grid side down.
-- **Fan gauge:** prints upright, as exported. Drop the fan in. It should slide
-  down without forcing and sit flat against the wall without rocking.
+- **Fan gauge:** prints upright, as exported. Drop the fan in, with its cable at
+  a bottom corner. It should slide down without forcing and be snug side to side
+  in the top 8 mm of the slot (the wider part below is the cable relief). The
+  gauge stands straight and is as deep as the thicker fan, so a thin fan will
+  tip front to back in it; the dock's tilted slot holds it.
 - **Seat checks:**
   - `fit-gauge.stl` prints flat. Slide it onto the Pager to the middle of its
     edge, with the bump over the side button.

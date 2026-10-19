@@ -186,14 +186,17 @@ module fit_gauge() linear_extrude(gauge_h) difference() {
     pocket_plan();
 }
 
-// Fan-slot gauge: the bottom 12 mm of the slot (floor, land, side walls, lips, cable
+// Fan-slot gauge: the bottom of the slot (floor, land, side walls, lips, cable
 // reliefs), stood upright to print. Drop the fan in to check the fit before a full dock.
+// fan-frame y of the gauge's top edge: 8 mm of real side wall above the corner reliefs,
+// which run up the fan's sides and would otherwise make the gauge look ~1 cm too wide
+gauge_top = -(fan_size/2 - 6 - fan_nub[0] - 1) + 8;
 module fan_gauge() translate([0, 0, hx]) rotate([90, 0, 0]) intersection() {
     difference() {
         fan_housing_local();
         slot_local();
     }
-    translate([-500, -500, -500]) cube([1000, 500 - fan_size/2 + 12, 1000]);
+    translate([-500, -500, -500]) cube([1000, 500 + gauge_top, 1000]);
 }
 
 // Optional TPU strip for the -Y wall groove; stands seat_clear + 0.3 proud so it

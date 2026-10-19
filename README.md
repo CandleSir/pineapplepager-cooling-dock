@@ -54,9 +54,11 @@ Other parts:
 - **Fan:** it drops into the slot from above, so it sits upright against the
   wall with the air hole. Gravity leans it onto that wall, which seals it.
   - No screws are needed.
-  - Turn it so its cable leaves at a lower corner. The cable goes straight out
-    the back there, at desk level. An inline adapter just lies on the desk
-    behind the dock.
+  - Turn it so its cable leaves from the bottom edge, at a lower corner. The
+    cable goes straight out the back there, at desk level. An inline adapter
+    just lies on the desk behind the dock.
+  - To lift it out, pinch its top edge through the finger scallops on either
+    side of the slot.
   - Flip the fan over for pull mode, and its cable comes out of the other lower
     corner.
 
@@ -74,12 +76,15 @@ frames with a square of MERV 8 furnace-filter media between them.
 
    If the thin backing mesh peels off easily, remove it. If not, keep it and put
    it on the fan side.
-2. **Load it.** Lay the square on the grid frame and press it down over the four
-   corner pegs. Press the cap on until the pegs come through its holes.
-3. **Install it.** Lift the fan out. Slide the filter stack down the back of
-   the slot, behind the lips' edge, with the grid facing forward toward where
-   the fan sits. Then drop the fan back in front of it. The lips at the back
-   of the slot hold it all in place.
+2. **Load it.** Snip a small triangle off each corner of the square, so the
+   pegs don't tear it. Lay it on the grid frame between the four corner pegs,
+   then press the cap down onto the pegs. The pegs are a press fit into the
+   cap's holes, so the stack holds together in your hand. If it's too tight to
+   press on, reprint the cap with `-D peg_fit=0.15`.
+3. **Install it.** With the fan in place, slide the filter stack down the back
+   of the slot, between the fan and the lips, with the grid facing the fan. The
+   lips hold it all in place. To lift the fan or the filter out, pinch its top
+   edge through the finger scallops on either side of the slot.
 4. **Without a filter**, snap the two frames together empty and use them as a
    spacer, so the fan can't walk off its wall.
 5. **In pull mode**, leave the filter out; it would be on the exhaust side.

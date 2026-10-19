@@ -26,7 +26,8 @@ module hole2d() intersection() {
 }
 
 // Slot cuts (fan frame): the slot, open at the top; the rear window between the lips;
-// cable-bump reliefs at both lower corners, open out the back; the air hole.
+// cable-bump reliefs at both lower corners (bottom-edge exits), open out the back;
+// finger scallops; the air hole.
 // g grows every cut but the hole (tests use it to prove wall thickness).
 module slot_local(g = 0, hole = true) {
     a = fan_size/2 + fan_clear + g;
@@ -37,6 +38,10 @@ module slot_local(g = 0, hole = true) {
     for (m = [0, 1]) mirror([m, 0, 0])
         translate([r0 - g, -fan_size/2 - relief - g, -g])
             cube([fan_size/2 + relief - r0 + 2*g, fan_size/2 + relief - r0 + 2*g, 100]);
+    // finger scallops beside the top of the fan and filter, to lift them out
+    for (m = [0, 1]) mirror([m, 0, 0])
+        translate([fan_size/2 - g, fan_size/2 - grip_h - g, -g])
+            cube([fan_clear + grip_w + 2*g, 200, slot_depth + 2*g]);
     if (hole) translate([0, 0, -wall - 1]) linear_extrude(wall + 1.01) hole2d();
 }
 

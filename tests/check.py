@@ -490,11 +490,10 @@ def test_housing_on_desk():
 
 # ---------------------------------------------------------------- v0.2 task 2: tapered body, fan slot
 STACK = "translate([-fan_size/2, -fan_size/2, fan_t]) cube([fan_size, fan_size, filter_stack]);"
-FAN_POSES = {  # cable bump: bottom edge right / left, side edge left / right
+FAN_POSES = {  # cable bump on the bottom edge, right (push) or left (flipped, pull); a side-edge
+    # bump can't drop in without grooves that would stop the side walls locating the fan
     "down-right": "fan_envelope();",
     "down-left": "translate([0,0,fan_t]) rotate([0,180,0]) fan_envelope();",
-    "side-left": "rotate([0,0,-90]) fan_envelope();",
-    "side-right": "translate([0,0,fan_t]) rotate([0,180,0]) rotate([0,0,-90]) fan_envelope();",
 }
 
 
@@ -529,10 +528,21 @@ def test_fan_seats_on_land():
 
 @test
 def test_fan_drop_in():
+    """Every cable pose drops in from above (not just fits once seated)."""
     for v in VARIANTS:
-        # 0.01 off the land: the fan's face is coplanar with it, and CGAL leaves slivers there
-        assert is_empty("intersection(){dock(); for (i = [0:5:120]) translate(i*fan_u() + 0.01*fan_n())"
-                        " fan_pose() { fan_envelope(); %s }}" % STACK, vd(v)), "%s: drop-in blocked" % tag(v)
+        for name, pose in FAN_POSES.items():
+            # 0.01 off the land: the fan's face is coplanar with it, and CGAL leaves slivers there
+            assert is_empty("intersection(){dock(); for (i = [0:5:120]) translate(i*fan_u() + 0.01*fan_n())"
+                            " fan_pose() { %s %s }}" % (pose, STACK), vd(v)), "%s %s: drop-in blocked" % (tag(v), name)
+
+
+@test
+def test_fan_grip():
+    """Fingertip room beside the top 6 mm of the fan and filter, both sides, from above."""
+    for v in VARIANTS:
+        probe = ("fan_pose() for (m = [0, 1]) mirror([m, 0, 0]) translate([fan_size/2 + fan_clear + 0.01,"
+                 " fan_size/2 - 6, 0.5]) cube([8, 60, slot_depth - 1]);")
+        assert is_empty("intersection(){dock(); %s}" % probe, vd(v)), "%s: no grip beside the fan" % tag(v)
 
 
 @test
@@ -638,7 +648,8 @@ def test_filter_frames():
         (glo, ghi), (clo, chi) = stl_bbox(g), stl_bbox(c)
         approx(ghi[0] - glo[0], fs, 0.01)
         approx(chi[2] - clo[2], ft, 0.01)
-        assert ghi[2] > ft + gap + 0.5, "%d: pegs don't reach into the cap" % fs
+        assert ghi[2] > ft + gap + 1.0, "%d: pegs engage the cap less than 1 mm" % fs
+        assert P("peg_fit") <= 0.1, "peg holes are a loose clearance fit, not a press fit"
         assert is_empty("intersection(){ filter_grid(); translate([0,0,frame_t + filter_gap]) filter_cap(); }", d), \
             "%d: pegs don't pass the cap's holes" % fs
         for part in (g, c):

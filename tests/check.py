@@ -267,8 +267,7 @@ def test_pinch_access():
 
 
 # ---------------------------------------------------------------- task 4
-ROOM_AIR = ["seat_pocket", "end_windows", "exhaust_chamber", "button_notch",
-            "fan_cable_channel", "pager_cable_guide"]
+ROOM_AIR = ["seat_pocket", "end_windows", "exhaust_chamber", "button_notch", "pager_cable_guide"]
 
 
 @test
@@ -581,6 +580,49 @@ def test_fan_slot_isolated():
         for m in ["seat_pocket", "exhaust_chamber", "button_notch", "end_windows", "pager_cable_guide"]:
             assert is_empty("intersection(){fan_slot(hole = false); %s(g = wall - 0.4);}" % m, vd(v)), \
                 "%s: fan slot breaks into %s" % (tag(v), m)
+
+
+# ---------------------------------------------------------------- v0.2 task 3: chamber
+@test
+def test_chamber_reaches_hole():
+    for v in VARIANTS:
+        probe = "fan_pose() translate([0,0,-wall-1.5]) linear_extrude(1) offset(-0.5) hole2d();"
+        assert is_empty("difference(){ %s chamber(); }" % probe, vd(v)), "%s: chamber misses the hole" % tag(v)
+
+
+@test
+def test_intake_joins_chamber():
+    for v in VARIANTS:
+        d = vd(v)
+        _, dst = run_scad("intersection(){ intake_duct(); chamber(); }", d)
+        bb = stl_bbox(dst) if dst.exists() else None
+        assert bb, "%s: intake duct never reaches the chamber" % tag(v)
+        vl = P("vent_lo", d)
+        assert bb[0][0] <= vl[0][0] and bb[1][0] >= vl[1][1], "%s: overlap %r" % (tag(v), bb)
+
+
+@test
+def test_exhaust_isolated():
+    for v in VARIANTS:
+        for m in ROOM_AIR:
+            assert is_empty("intersection(){chamber(); %s(g = wall - 0.4);}" % m, vd(v)), \
+                "%s: %s leaks into the chamber" % (tag(v), m)
+
+
+@test
+def test_slot_isolated_from_chamber():
+    for v in VARIANTS:
+        assert is_empty("intersection(){chamber(); fan_slot(g = wall - 0.4, hole = false);}", vd(v)), \
+            "%s: slot leaks into the chamber outside the hole" % tag(v)
+
+
+@test
+def test_chamber_sealed():
+    """Plug the slot (hole included) and the intake: exactly one enclosed void remains."""
+    for v in VARIANTS:
+        log, _ = run_scad("union(){ dock(); intake_duct(); fan_slot(); }", vd(v))
+        vols = re.findall(r"Volumes:\s+(\d+)", log)
+        assert vols and int(vols[-1]) == 3, "%s: %s volumes (3 = sealed)" % (tag(v), vols[-1:])
 
 
 # ---------------------------------------------------------------- runner

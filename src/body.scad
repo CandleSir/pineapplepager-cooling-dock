@@ -86,6 +86,30 @@ module behind_slab()
     translate(-(seat_depth + seat_clear + wall) * slope_n()) rotate([seat_angle, 0, 0])
         translate([-500, -500, -1000]) cube(1000);
 
+// Half-space dot(X, m) <= k, for a unit m in the YZ plane.
+module below(m, k) translate(k * m) rotate([atan2(m[2], m[1]), 0, 0]) translate([-500, -1000, -500]) cube(1000);
+
+// Sealed air path from the fan's hole to the intake duct, kept small: under the seat
+// slab (45 deg ceiling), under a 45 deg cap sloping down onto the hole's top, above a
+// floor just below the hole and the duct, in front of the land, and only as wide as
+// the hole or the lower grilles. Every ceiling is a 45 deg overhang; the solid around
+// it prints as sparse infill.
+ch_x = max(max([for (v = vent_lo) each [abs(v[0]), abs(v[1])]]) + vent_margin, hole_r) + 1;
+ch_floor = min((fan_origin() - hole_r * fan_u() - wall * fan_n())[2],
+               pose_pt([0, -pg_W/2 - duct_w, pg_zc - pg_T/2 - seat_clear - wall - duct_dip])[2]) - 1;
+ch_cap = (fan_origin() + hole_r * fan_u() - wall * fan_n()) * slope_t() + 1;
+module chamber() difference() {
+    intersection() {
+        behind_slab();
+        below([0, 0, -1], -ch_floor);
+        below(fan_n(), fan_origin() * fan_n() - wall);
+        below(slope_t(), ch_cap);
+        translate([-ch_x, -500, -500]) cube([2*ch_x, 1000, 1000]);
+    }
+    pager_pose() gbox(pg_clip_box, clip_relief + wall);
+    clip_wall_posts();
+}
+
 // Chamber -> pager: open channels along the -Y edge in front of both grilles.
 module intake_duct() pager_pose()
     for (v = vent_lo) {
@@ -129,6 +153,7 @@ module dock() {
     difference() {
         body_shell();
         fan_slot();
+        chamber();
         seat_pocket();
         end_windows();
         intake_duct();

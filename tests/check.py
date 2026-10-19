@@ -625,6 +625,62 @@ def test_chamber_sealed():
         assert vols and int(vols[-1]) == 3, "%s: %s volumes (3 = sealed)" % (tag(v), vols[-1:])
 
 
+# ---------------------------------------------------------------- v0.2 task 4: filter, gauges, coupon, gasket
+@test
+def test_filter_frames():
+    ft, gap, stack, bar, pitch = P("[frame_t, filter_gap, filter_stack, grid_bar, grid_pitch]")
+    approx(stack, 2 * ft + gap, 1e-9)
+    assert (pitch - bar) ** 2 / pitch ** 2 >= 0.70, "grid open area"
+    for fs in (40, 60):
+        d = {"fan_size": fs}
+        _, g = run_scad("filter_grid();", d)
+        _, c = run_scad("filter_cap();", d)
+        (glo, ghi), (clo, chi) = stl_bbox(g), stl_bbox(c)
+        approx(ghi[0] - glo[0], fs, 0.01)
+        approx(chi[2] - clo[2], ft, 0.01)
+        assert ghi[2] > ft + gap + 0.5, "%d: pegs don't reach into the cap" % fs
+        assert is_empty("intersection(){ filter_grid(); translate([0,0,frame_t + filter_gap]) filter_cap(); }", d), \
+            "%d: pegs don't pass the cap's holes" % fs
+        for part in (g, c):
+            hanging, ceilings = bridges(stl_facets(part))
+            assert not hanging or max(hanging) <= 25.1, "%d: frame bridges %r" % (fs, max(hanging))
+
+
+@test
+def test_spacer_slack():
+    """Empty frames as a spacer (no media): the fan still can't move more than 1.5 mm off its land."""
+    for v in VARIANTS:
+        e = ("translate(%s*fan_n()) fan_pose() { fan_envelope();"
+             " translate([-fan_size/2, -fan_size/2, fan_t]) cube([fan_size, fan_size, 2*frame_t]); }")
+        assert not is_empty("intersection(){dock(); %s}" % (e % "1.5"), vd(v)), "%s: too much slack" % tag(v)
+
+
+@test
+def test_fan_gauge():
+    for fs, t in ((40, 20), (60, 25)):
+        d = {"fan_size": fs, "fan_t": t}
+        _, g = run_scad("fan_gauge();", d)
+        lo, hi = stl_bbox(g)
+        approx(lo[2], 0, 0.01)
+        assert hi[2] - lo[2] <= P("hx", d) - fs / 2 + 12 + 0.1
+        hanging, _ = bridges(stl_facets(g))
+        assert not hanging or max(hanging) <= 25.1, "%d gauge bridges %r" % (fs, max(hanging))
+
+
+@test
+def test_coupon_small():
+    _, dst = run_scad("coupon();")
+    lo, hi = stl_bbox(dst)
+    approx(lo[2], 0, 0.01)
+    assert hi[2] - lo[2] <= P("seat_depth + seat_clear + wall") + 0.5
+
+
+@test
+def test_gasket_fits_groove():
+    assert is_empty("intersection(){dock(); gasket_seated();}"), "gasket collides with the dock"
+    assert not is_empty("intersection(){pager_pose() pager_envelope(); gasket_seated();}"), "gasket doesn't seal"
+
+
 # ---------------------------------------------------------------- runner
 def main(argv):
     flt = argv[1:]

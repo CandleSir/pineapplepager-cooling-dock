@@ -181,6 +181,16 @@ module fit_gauge() linear_extrude(gauge_h) difference() {
     pocket_plan();
 }
 
+// Fan-slot gauge: the bottom 12 mm of the slot (floor, land, side walls, lips, cable
+// reliefs), stood upright to print. Drop the fan in to check the fit before a full dock.
+module fan_gauge() translate([0, 0, hx]) rotate([90, 0, 0]) intersection() {
+    difference() {
+        fan_housing_local();
+        slot_local();
+    }
+    translate([-500, -500, -500]) cube([1000, 500 - fan_size/2 + 12, 1000]);
+}
+
 // Optional TPU strip for the -Y wall groove; stands seat_clear + 0.3 proud so it
 // presses on the pager's -Y edge above the duct. Printed flat.
 gasket_len = pg_L - 2*pg_r - 0.4;

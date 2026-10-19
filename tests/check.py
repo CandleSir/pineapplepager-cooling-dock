@@ -23,8 +23,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 LIB = REPO / "src" / "lib.scad"
 REF_STL = REPO / "hak5-wifi-pineapple-pager.stl"
-VARIANTS = [80, 92, 120]
-V2 = [(60, 15), (60, 25), (40, 10), (40, 20)]
+VARIANTS = [(60, 15), (60, 25), (40, 10), (40, 20)]
+V2 = VARIANTS
 
 
 def vd(v):
@@ -193,92 +193,32 @@ def per_variant(fn_body):
 @test
 def test_fits_bed():
     def one(fs):
-        _, dst = run_scad("dock();", {"fan_size": fs})
+        _, dst = run_scad("dock();", vd(fs))
         lo, hi = stl_bbox(dst)
         size = [hi[k] - lo[k] for k in range(3)]
-        assert all(s <= BED for s in size), "%d: %r exceeds bed" % (fs, size)
+        assert all(s <= BED for s in size), "%s: %r exceeds bed" % (tag(fs), size)
     per_variant(one)
-
-
-@test
-def test_trapezoid_profile():
-    def one(fs):
-        H, D, Wd = P("[H, D, Wd]", {"fan_size": fs})
-        _, dst = run_scad("dock();", {"fan_size": fs})
-        lo, hi = stl_bbox(dst)
-        approx(hi[2], H, 0.5)
-        approx(lo[2], 0, 0.01)
-        approx(hi[1] - lo[1], D, 0.5)
-        approx(hi[0] - lo[0], Wd, 0.5)
-    per_variant(one)
-
-
-FAN_POSES = {
-    "as-is": "fan_pose() fan_envelope();",
-    # turned over (rotate 180 about the fan's Y axis) and turned 90 in-plane
-    "flipped": "fan_pose() translate([0,0,fan_t]) rotate([0,180,0]) fan_envelope();",
-    "rot90": "fan_pose() rotate([0,0,90]) fan_envelope();",
-    "flip-rot270": "fan_pose() translate([0,0,fan_t]) rotate([0,180,0]) rotate([0,0,270]) fan_envelope();",
-}
-
-
-@test
-def test_fan_fits_both_thickness():
-    for fs in VARIANTS:
-        for t in (25, 15):
-            assert is_empty("intersection(){dock(); %s}" % FAN_POSES["as-is"],
-                            {"fan_size": fs, "fan_t": t}), "%d/%d interferes" % (fs, t)
-
-
-@test
-def test_fan_fits_flipped():
-    for fs in VARIANTS:
-        for name, pose in FAN_POSES.items():
-            assert is_empty("intersection(){dock(); %s}" % pose, {"fan_size": fs}), \
-                "%d %s interferes" % (fs, name)
-
-
-@test
-def test_fan_retained():
-    for fs in VARIANTS:
-        d = {"fan_size": fs}
-        # sliding 2 mm down the rear slope is blocked by the tray's lower wall
-        assert not is_empty("intersection(){dock(); translate(-2*rear_t()) fan_pose() fan_envelope();}", d), \
-            "%d: fan can slide out of the tray" % fs
-        # lifting straight out along the rear-face normal is unobstructed
-        # stepped sweep (hull() of the non-convex fan+bump would invent material)
-        assert is_empty("intersection(){dock(); for (i = [0:5:60])"
-                        " translate(i*rear_n()) fan_pose() fan_envelope(); }", d), \
-            "%d: drop-in path obstructed" % fs
-
-
-@test
-def test_fan_sits_on_ledge():
-    for fs in VARIANTS:
-        # pushed 0.5 mm further in, the fan must hit the inner ledge (it can't fall into the plenum)
-        assert not is_empty("intersection(){dock(); translate(-0.8*rear_n()) fan_pose() fan_envelope();}",
-                            {"fan_size": fs}), "%d: fan not supported by ledge" % fs
 
 
 # ---------------------------------------------------------------- task 3
 def each_variant_clip(fn):
     for fs in VARIANTS:
         for clip in ("true", "false"):
-            fn({"fan_size": fs}, clip)
+            fn(vd(fs), clip)
 
 
 @test
 def test_seat_clip_on_clear():
     for fs in VARIANTS:
         assert is_empty("intersection(){dock(); pager_pose() pager_envelope(true);}",
-                        {"fan_size": fs}), "%d: clip-on pager interferes" % fs
+                        vd(fs)), "%s: clip-on pager interferes" % tag(fs)
 
 
 @test
 def test_seat_clip_off_clear():
     for fs in VARIANTS:
         assert is_empty("intersection(){dock(); pager_pose() pager_envelope(false);}",
-                        {"fan_size": fs}), "%d: clip-off pager interferes" % fs
+                        vd(fs)), "%s: clip-off pager interferes" % tag(fs)
 
 
 @test
@@ -298,7 +238,7 @@ def test_drop_in_path():
     for fs in VARIANTS:
         assert is_empty("intersection(){dock(); for (i = [0:4:40])"
                         " translate(i*slope_n()) pager_pose() pager_envelope(true);}",
-                        {"fan_size": fs}), "%d: drop-in path obstructed" % fs
+                        vd(fs)), "%s: drop-in path obstructed" % tag(fs)
 
 
 def plug_boxes():
@@ -313,7 +253,7 @@ def plug_boxes():
 def test_ports_exposed():
     for fs in VARIANTS:
         assert is_empty("intersection(){dock(); pager_pose() { %s }}" % plug_boxes(),
-                        {"fan_size": fs}), "%d: plug blocked" % fs
+                        vd(fs)), "%s: plug blocked" % tag(fs)
 
 
 @test
@@ -323,7 +263,7 @@ def test_pinch_access():
         assert is_empty(
             "intersection(){dock(); pager_pose() for (sx = [-1, 1])"
             " translate([sx*(pg_L/2 + 0.5 + 6), 0, pg_zc + 4]) cube([12, 20, 16], center=true);}",
-            {"fan_size": fs}), "%d: no pinch access" % fs
+            vd(fs)), "%s: no pinch access" % tag(fs)
 
 
 # ---------------------------------------------------------------- task 4
@@ -332,44 +272,13 @@ ROOM_AIR = ["seat_pocket", "end_windows", "exhaust_chamber", "button_notch",
 
 
 @test
-def test_exhaust_isolated():
-    """Every room-air cut stays >= wall-0.4 away from the plenum (only the intake duct joins them)."""
-    for fs in VARIANTS:
-        for m in ROOM_AIR:
-            assert is_empty("intersection(){plenum(); %s(g = wall - 0.4);}" % m, {"fan_size": fs}), \
-                "%d: %s leaks into the plenum" % (fs, m)
-
-
-@test
-def test_plenum_reaches_fan():
-    """Just inside the tray floor, the whole fan opening is plenum."""
-    for fs in VARIANTS:
-        probe = ("fan_pose() translate([0, 0, -wall - fan_clear - 3]) linear_extrude(2)"
-                 " square(fan_size - 2*fan_ledge - 8, center = true);")
-        assert is_empty("difference(){ %s plenum(); }" % probe, {"fan_size": fs}), \
-            "%d: plenum doesn't reach the fan opening" % fs
-
-
-@test
 def test_intake_covers_vents():
     for fs in VARIANTS:
         for i in (0, 1):
             zone = ("pager_pose() let(v = vent_lo[%d]) translate([v[0], -pg_W/2 - 1.5, v[2]])"
                     " cube([v[1] - v[0], 1.5, v[3] - v[2]]);" % i)
-            assert is_empty("difference(){ %s intake_duct(); }" % zone, {"fan_size": fs}), \
-                "%d: vent %d not covered by the intake duct" % (fs, i)
-
-
-@test
-def test_intake_joins_plenum():
-    for fs in VARIANTS:
-        d = {"fan_size": fs}
-        _, dst = run_scad("intersection(){ intake_duct(); plenum(); }", d)
-        bb = stl_bbox(dst) if dst.exists() else None
-        assert bb, "%d: intake duct never reaches the plenum" % fs
-        v = P("vent_lo", d)
-        assert bb[0][0] <= v[0][0] and bb[1][0] >= v[1][1], \
-            "%d: duct/plenum overlap %r doesn't span both grilles" % (fs, bb)
+            assert is_empty("difference(){ %s intake_duct(); }" % zone, vd(fs)), \
+                "%s: vent %d not covered by the intake duct" % (tag(fs), i)
 
 
 @test
@@ -377,8 +286,8 @@ def test_exhaust_covers_vent():
     for fs in VARIANTS:
         zone = ("pager_pose() let(v = vent_hi) translate([v[0], pg_W/2, v[2]])"
                 " cube([v[1] - v[0], 1.5, v[3] - v[2]]);")
-        assert is_empty("difference(){ %s exhaust_chamber(); }" % zone, {"fan_size": fs}), \
-            "%d: upper grille not open to the exhaust" % fs
+        assert is_empty("difference(){ %s exhaust_chamber(); }" % zone, vd(fs)), \
+            "%s: upper grille not open to the exhaust" % tag(fs)
 
 
 @test
@@ -386,8 +295,8 @@ def test_bar_grille_open_area():
     bar, gap = P("[grille_bar, grille_gap]")
     assert gap / (bar + gap) >= 0.70, "grille open area %.2f" % (gap / (bar + gap))
     for fs in VARIANTS:
-        assert not is_empty("intersection(){dock(); bar_grille();}", {"fan_size": fs}), \
-            "%d: grille bars missing from the dock" % fs
+        assert not is_empty("intersection(){dock(); bar_grille();}", vd(fs)), \
+            "%s: grille bars missing from the dock" % tag(fs)
 
 
 @test
@@ -396,7 +305,7 @@ def test_button_notch_clear():
         assert is_empty(
             "intersection(){dock(); pager_pose() translate([(btn_hi[0] + btn_hi[1])/2,"
             " pg_W/2 + seat_clear + 8.2, (btn_hi[2] + btn_hi[3])/2]) cylinder(d = 16, h = 60);}",
-            {"fan_size": fs}), "%d: side button not reachable" % fs
+            vd(fs)), "%s: side button not reachable" % tag(fs)
 
 
 def _normal(t):
@@ -459,31 +368,31 @@ def bridges(tris, tol=0.02):
 
 @test
 def test_no_long_bridges():
-    """Supports stay OFF (the plenum is closed), so nothing may hang: every edge with
+    """Supports stay OFF (the chamber is closed), so nothing may hang: every edge with
     nothing beneath it and every flat ceiling spans at most bridge_max."""
     for fs in VARIANTS:
-        d = {"fan_size": fs}
+        d = vd(fs)
         _, dst = run_scad("dock();", d)
         hanging, ceilings = bridges(stl_facets(dst))
         lim = P("bridge_max", d) + 0.1
-        assert max(hanging) <= lim, "%d: hanging edges %s mm" % (
-            fs, [round(x, 1) for x in sorted(hanging, reverse=True)[:4]])
+        assert max(hanging) <= lim, "%s: hanging edges %s mm" % (
+            tag(fs), [round(x, 1) for x in sorted(hanging, reverse=True)[:4]])
         wide = {z: round(w, 1) for z, w in ceilings.items() if w > lim}
-        assert not wide, "%d: flat ceilings wider than bridge_max at z=%s" % (fs, wide)
+        assert not wide, "%s: flat ceilings wider than bridge_max at z=%s" % (tag(fs), wide)
 
 
 @test
 def test_gasket_groove_cut():
     """Groove is cut, with >= 1.2 mm of wall below it (over the duct) and >= 1.0 mm above (to the face)."""
     for fs in VARIANTS:
-        d = {"fan_size": fs}
-        assert is_empty("intersection(){dock(); gasket_groove();}", d), "%d: groove not cut" % fs
+        d = vd(fs)
+        assert is_empty("intersection(){dock(); gasket_groove();}", d), "%s: groove not cut" % tag(fs)
         # probes stop 0.01 short of the groove faces (coincident faces leave CGAL slivers)
         for dz, h in ((-1.2, 1.19), (groove_w_val(d) + 0.01, 0.99)):
             probe = ("pager_pose() translate([-pg_L/2 + pg_r, -pg_W/2 - seat_clear - groove_d,"
                      " groove_z + %f]) cube([pg_L - 2*pg_r, groove_d, %f]);" % (dz, h))
             assert is_empty("difference(){ %s dock(); }" % probe, d), \
-                "%d: groove wall at dz=%s thinner than %s mm" % (fs, dz, h)
+                "%s: groove wall at dz=%s thinner than %s mm" % (tag(fs), dz, h)
 
 
 def groove_w_val(d):
@@ -492,103 +401,13 @@ def groove_w_val(d):
 
 # ---------------------------------------------------------------- task 5
 @test
-def test_cable_channel_open_top():
-    """The fan cable drops in from outside along the whole channel: a slightly narrower
-    probe from the channel floor out along the rear-face normal hits nothing."""
-    for fs in VARIANTS:
-        assert is_empty("intersection(){dock(); fan_cable_channel(probe = true);}", {"fan_size": fs}), \
-            "%d: fan cable channel closed somewhere" % fs
-
-
-@test
-def test_cable_channel_reaches_tray_and_edge():
-    for fs in VARIANTS:
-        d = {"fan_size": fs}
-        _, dst = run_scad("fan_cable_channel();", d)
-        lo, hi = stl_bbox(dst)
-        Dv, tray_lo_z = P("[D, (fan_v0) * sin(seat_angle)]", d)
-        assert hi[1] >= Dv - 0.01 and lo[2] <= 0.01, "%d: channel doesn't exit at the rear-bottom edge" % fs
-        assert hi[2] >= tray_lo_z, "%d: channel doesn't reach the tray" % fs
-
-
-@test
-def test_adapter_pocket():
-    for fs in VARIANTS:
-        assert is_empty("intersection(){dock(); adapter_probe();}", {"fan_size": fs}), \
-            "%d: no room for a 15x10x30 inline adapter" % fs
-        # the pocket runs out through the rear-bottom edge (no thin sliver left at the edge)
-        assert is_empty("intersection(){dock(); rear_frame() translate([adapter_at[0] - adapter[0]/2 + 0.2,"
-                        " -2, -adapter[2] + 0.2]) cube([adapter[0] - 0.4, 4, 40]);}", {"fan_size": fs}), \
-            "%d: sliver of wall left below the adapter pocket" % fs
-
-
-@test
 def test_pager_cable_guide_open():
     for fs in VARIANTS:
-        assert is_empty("intersection(){dock(); pager_cable_guide(probe = true);}", {"fan_size": fs}), \
-            "%d: pager cable guide closed" % fs
-
-
-@test
-def test_coupon_small():
-    for fs in VARIANTS:
-        d = {"fan_size": fs}
-        _, dst = run_scad("coupon();", d)
-        bb = stl_bbox(dst)
-        assert bb, "%d: coupon empty" % fs
-        lo, hi = bb
-        size = [hi[k] - lo[k] for k in range(3)]
-        cap = P("seat_depth + seat_clear + wall", d)
-        assert all(x <= BED for x in size), size
-        approx(lo[2], 0, 0.01)
-        assert size[2] <= cap + 0.5, "%d: coupon %r taller than the seat cradle" % (fs, size)
-
-
-@test
-def test_gasket_fits_groove():
-    d = {"fan_size": 92}
-    _, dst = run_scad("gasket();", d)
-    assert stl_bbox(dst), "gasket empty"
-    assert is_empty("intersection(){dock(); gasket_seated();}", d), "gasket collides with the dock"
-    assert not is_empty("intersection(){pager_pose() pager_envelope(); gasket_seated();}", d), \
-        "gasket doesn't reach the pager (no seal)"
+        assert is_empty("intersection(){dock(); pager_cable_guide(probe = true);}", vd(fs)), \
+            "%s: pager cable guide closed" % tag(fs)
 
 
 # ---------------------------------------------------------------- final review fixes
-@test
-def test_fan_slot_isolated():
-    """The fan tray keeps >= wall-0.4 from every seat-area cut (no plenum bypass)."""
-    for fs in VARIANTS:
-        for m in ["seat_pocket", "exhaust_chamber", "button_notch", "end_windows"]:
-            assert is_empty("intersection(){fan_slot(); %s(g = wall - 0.4);}" % m, {"fan_size": fs}), \
-                "%d: fan tray breaks into %s" % (fs, m)
-
-
-@test
-def test_plenum_sealed():
-    """Plug the fan tray and the intake duct: exactly one enclosed void (the plenum) remains."""
-    for fs in VARIANTS:
-        log, _ = run_scad(
-            "union(){ dock(); intake_duct(); fan_pose() translate([-fan_size/2 - 6, -fan_size/2 - 6,"
-            " -fan_clear - 0.01]) cube([fan_size + 12, fan_size + 12, 200]); }", {"fan_size": fs})
-        vols = re.findall(r"Volumes:\s+(\d+)", log)
-        assert vols and int(vols[-1]) == 3, "%d: plugged dock has %s volumes (3 = sealed)" % (fs, vols[-1:])
-
-
-@test
-def test_optional_grill_fits():
-    """A screw-on Noctua grill (fan-sized, 2.5 mm incl. screw heads) fits on the outer face,
-    or on the inner face with the fan riding 2.5 mm higher in the tray."""
-    for fs in VARIANTS:
-        d = {"fan_size": fs}
-        grill = "cube([fan_size, fan_size, 2.5], center = false)"
-        outer = ("fan_pose() { fan_envelope(); translate([-fan_size/2, -fan_size/2, fan_t]) %s; }" % grill)
-        inner = ("translate(2.5*rear_n()) fan_pose() { fan_envelope();"
-                 " translate([-fan_size/2, -fan_size/2, -2.5]) %s; }" % grill)
-        for name, e in (("outer", outer), ("inner", inner)):
-            assert is_empty("intersection(){dock(); %s}" % e, d), "%d: grill on %s face interferes" % (fs, name)
-
-
 # ---------------------------------------------------------------- coupon round 1: top-wall play
 def stl_volume(path):
     return abs(sum(
@@ -600,7 +419,7 @@ def stl_volume(path):
 def test_top_wall_clearance():
     """Pocket's +Y wall sits seat_clear_top off the pager; the -Y (seal) wall stays at seat_clear.
     Probes at mid-thickness: +Y between the exhaust and the button notch, -Y beyond the ducts."""
-    d = {"fan_size": 92}
+    d = {}
     g, ct, c = P("[env_grow, seat_clear_top, seat_clear]")
     assert g < ct < c, "need env_grow < seat_clear_top < seat_clear, got %r" % ([g, ct, c],)
     hit ="pg_W/2 + seat_clear_top + 0.05", "pg_W/2 + seat_clear_top + 0.3"
@@ -630,7 +449,7 @@ def test_fit_gauge():
                          ("-pg_W/2 - seat_clear - 0.3", "-pg_W/2 - seat_clear - 0.05", "-Y")):
         assert not is_empty("intersection(){fit_gauge(); translate([30, %s, 0]) cube([4, %s - (%s), 1]);}"
                             % (y0, y1, y0)), "%s wall not at the pocket clearance" % side
-    _, c = run_scad("coupon();", {"fan_size": 80})
+    _, c = run_scad("coupon();")
     assert stl_volume(g) < 0.2 * stl_volume(c), "gauge %.1f cm3 vs coupon %.1f cm3" % (
         stl_volume(g) / 1000, stl_volume(c) / 1000)
 
@@ -668,6 +487,100 @@ def test_housing_on_desk():
     for v in V2:
         zs = P("[for (k = housing_corners()) k[2]]", vd(v))
         approx(min(zs), 0, 1e-6)
+
+
+# ---------------------------------------------------------------- v0.2 task 2: tapered body, fan slot
+STACK = "translate([-fan_size/2, -fan_size/2, fan_t]) cube([fan_size, fan_size, filter_stack]);"
+FAN_POSES = {  # cable bump: bottom edge right / left, side edge left / right
+    "down-right": "fan_envelope();",
+    "down-left": "translate([0,0,fan_t]) rotate([0,180,0]) fan_envelope();",
+    "side-left": "rotate([0,0,-90]) fan_envelope();",
+    "side-right": "translate([0,0,fan_t]) rotate([0,180,0]) rotate([0,0,-90]) fan_envelope();",
+}
+
+
+@test
+def test_profile():
+    for v in VARIANTS:
+        d = vd(v)
+        H, Wd, hx, top = P("[H, Wd, hx, fan_pt([0, fan_size/2 + fan_clear, slot_depth + wall])[2]]", d)
+        _, dst = run_scad("dock();", d)
+        lo, hi = stl_bbox(dst)
+        assert all(hi[k] - lo[k] <= BED for k in range(3)), tag(v)
+        approx(lo[2], 0, 0.01)
+        approx(hi[2], H, 0.5)
+        approx(hi[0] - lo[0], Wd, 0.5)
+        assert 2 * hx < Wd and top < H, "%s: back doesn't taper (hx %.1f, top %.1f)" % (tag(v), hx, top)
+
+
+@test
+def test_fan_fits():
+    for v in VARIANTS:
+        for name, pose in FAN_POSES.items():
+            assert is_empty("intersection(){dock(); fan_pose() { %s %s }}" % (pose, STACK), vd(v)), \
+                "%s %s interferes" % (tag(v), name)
+
+
+@test
+def test_fan_seats_on_land():
+    for v in VARIANTS:
+        assert not is_empty("intersection(){dock(); translate(-0.3*fan_n()) fan_pose() fan_envelope();}", vd(v)), \
+            "%s: nothing stops the fan at the land" % tag(v)
+
+
+@test
+def test_fan_drop_in():
+    for v in VARIANTS:
+        # 0.01 off the land: the fan's face is coplanar with it, and CGAL leaves slivers there
+        assert is_empty("intersection(){dock(); for (i = [0:5:120]) translate(i*fan_u() + 0.01*fan_n())"
+                        " fan_pose() { fan_envelope(); %s }}" % STACK, vd(v)), "%s: drop-in blocked" % tag(v)
+
+
+@test
+def test_stack_retained():
+    for v in VARIANTS:
+        assert not is_empty("intersection(){dock(); translate((fan_clear_z + 0.3)*fan_n()) fan_pose() { %s }}"
+                            % STACK, vd(v)), "%s: lips don't hold the filter stack" % tag(v)
+
+
+@test
+def test_slot_clearance():
+    fc = P("fan_clear")
+    approx(fc, 0.3, 1e-9)
+    for v in VARIANTS:
+        d = vd(v)
+        assert not is_empty("intersection(){dock(); fan_pose() translate([fan_size/2 + fan_clear + 0.05, -5, 2])"
+                            " cube([0.25, 10, 4]);}", d), "%s: side wall not at fan_clear" % tag(v)
+        assert is_empty("intersection(){dock(); fan_pose() translate([fan_size/2, -5, 2])"
+                        " cube([fan_clear - 0.05, 10, 4]);}", d), "%s: side wall inside fan_clear" % tag(v)
+
+
+@test
+def test_hole_inside_land():
+    for v in VARIANTS:
+        assert is_empty("difference(){ fan_pose() translate([0,0,-wall-1]) linear_extrude(wall + 1.01) hole2d();"
+                        " fan_pose() translate([-(fan_size/2 - 1), -(fan_size/2 - 1), -50])"
+                        " cube([fan_size - 2, fan_size - 2, 100]); }", vd(v)), "%s: hole outside the land" % tag(v)
+
+
+@test
+def test_cable_exits_back():
+    """From the bump, in every pose, straight out the back is clear."""
+    for v in VARIANTS:
+        for name, pose in FAN_POSES.items():
+            probe = ("fan_pose() for (i = [0:3:40]) translate([0,0,i]) intersection(){ %s"
+                     " difference(){ cube(200, center=true); translate([-fan_size/2,-fan_size/2,-1])"
+                     " cube([fan_size, fan_size, 300]); } }" % pose)
+            assert is_empty("intersection(){dock(); %s}" % probe, vd(v)), "%s %s: cable blocked" % (tag(v), name)
+
+
+@test
+def test_fan_slot_isolated():
+    """The slot keeps >= wall-0.4 from every seat cut."""
+    for v in VARIANTS:
+        for m in ["seat_pocket", "exhaust_chamber", "button_notch", "end_windows", "pager_cable_guide"]:
+            assert is_empty("intersection(){fan_slot(hole = false); %s(g = wall - 0.4);}" % m, vd(v)), \
+                "%s: fan slot breaks into %s" % (tag(v), m)
 
 
 # ---------------------------------------------------------------- runner

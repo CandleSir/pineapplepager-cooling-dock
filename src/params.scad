@@ -82,7 +82,7 @@ hx = fan_size/2 + relief + wall;        // housing half-width (and depth below t
 
 // ---- Air path
 duct_w = 5;           // intake duct reaches this far beyond the pager's -Y edge
-duct_dip = 6;         // ...and this far below the seat floor slab, into the plenum
+duct_dip = 6;         // ...and this far below the seat floor slab, into the chamber
 vent_margin = 1.5;    // duct / exhaust openings overlap each grille by this much
 duct_top_margin = 0.5;  // ...except above the lower grilles, leaving room for the groove
 grille_bar = 1.6;     // exhaust bar grille: 1.6 / (1.6 + 3.8) solid -> 70 % open

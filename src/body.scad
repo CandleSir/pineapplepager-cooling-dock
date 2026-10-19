@@ -1,38 +1,48 @@
 // Dock body.
 
-module body_shell() {
+// The seat slab: the 45 deg front face down to a wall behind the pocket, full width.
+module seat_block() let(s = sin(seat_angle), c = cos(seat_angle))
     rotate([90, 0, 90]) linear_extrude(Wd, center = true)
-        polygon([[0, 0], [D, 0], [D - run, H], [run, H]]);
+        polygon([[0, 0], [slab_d/s, 0], [(slab_d + H*c)/s, H], [H*c/s, H]]);
+
+module fan_housing_local() translate(housing_box[0]) cube(housing_box[1] - housing_box[0]);
+
+// Sides and back sweep from the seat down to the fan housing; the housing's floor
+// shadow keeps the base flat under the tilted housing.
+module body_shell() hull() {
+    seat_block();
+    fan_pose() fan_housing_local();
+    linear_extrude(0.01) projection() fan_pose() fan_housing_local();
 }
 
-// Tray the fan drops into from above/behind, open to the outside, with
-// corner reliefs for the cable bump in any orientation and an inner ledge.
-module fan_slot() {
-    s = fan_size + 2*fan_clear;
-    fan_pose() {
-        // tray, open outward
-        translate([-s/2, -s/2, -fan_clear]) cube([s, s, fan_t + fan_clear + 80]);
-        // cable-bump reliefs on all four edges, both sides of each corner
-        for (a = [0:90:270]) rotate([0, 0, a])
-            for (sx = [-1, 1])
-                translate([sx > 0 ? s/2 - 6 - fan_nub[0] - 1 : -s/2 + 5, s/2 - 0.01, -fan_clear])
-                    cube([fan_nub[0] + 2, fan_nub[1] + fan_clear, fan_t + fan_clear + 80]);
-        // air opening through the ledge, split by ribs so the ledge strip above it
-        // never bridges more than bridge_max; ribs sit 0.5 below the ledge, clear of the blades
-        w = fan_size - 2*fan_ledge;
-        n = ceil(w / bridge_max);
-        difference() {
-            translate([0, 0, -wall - fan_clear - 1])
-                linear_extrude(wall + 1.01)
-                    offset(4) square(w - 8, center = true);
-            for (i = [1 : n - 1])
-                translate([-w/2 + i*w/n - rib_w/2, -w/2 - 1, -wall - fan_clear - 1.01])
-                    cube([rib_w, w + 2, wall + 0.51]);
-        }
+// Air hole through the land: a teardrop (prints without supports) cut flat at the
+// circle's top, so it stays inside the fan frame.
+module hole2d() intersection() {
+    hull() {
+        circle(hole_r);
+        translate([0, hole_r * sqrt(2)]) square(0.01, center = true);
     }
+    translate([-hole_r - 1, -hole_r - 1]) square([2*hole_r + 2, 2*hole_r + 1]);
 }
 
-// Posts from the plenum floor to the lowest edge of the clip pocket's wall, which
+// Slot cuts (fan frame): the slot, open at the top; the rear window between the lips;
+// cable-bump reliefs at both lower corners, open out the back; the air hole.
+// g grows every cut but the hole (tests use it to prove wall thickness).
+module slot_local(g = 0, hole = true) {
+    a = fan_size/2 + fan_clear + g;
+    translate([-a, -a, -g]) cube([2*a, 200, slot_depth + 2*g]);
+    w = fan_size/2 - fan_lip + g;
+    translate([-w, -w, slot_depth - 0.01]) cube([2*w, 200, 100]);
+    r0 = fan_size/2 - 6 - fan_nub[0] - 1;   // inner end of the bump's run along the edge
+    for (m = [0, 1]) mirror([m, 0, 0])
+        translate([r0 - g, -fan_size/2 - relief - g, -g])
+            cube([fan_size/2 + relief - r0 + 2*g, fan_size/2 + relief - r0 + 2*g, 100]);
+    if (hole) translate([0, 0, -wall - 1]) linear_extrude(wall + 1.01) hole2d();
+}
+
+module fan_slot(g = 0, hole = true) fan_pose() slot_local(g, hole);
+
+// Posts from the chamber floor to the lowest edge of the clip pocket's wall, which
 // otherwise hangs in mid-air; ends plus enough between to keep spans <= bridge_max.
 module clip_wall_posts() let(g = clip_relief + wall,
                              x0 = pg_clip_box[0][0] - g, x1 = pg_clip_box[1][0] + g,
@@ -57,7 +67,7 @@ module pocket_plan(g = 0) {
 
 // Drop-in pocket, open to the face, with belt-clip relief. Button reliefs run down to
 // the back face so no button ever bears weight.
-// g grows every cut (tests use it to prove wall thickness to the plenum).
+// g grows every cut (tests use it to prove wall thickness to the chamber).
 module seat_pocket(g = 0) pager_pose() {
     translate([0, 0, pg_zc - pg_T/2 - seat_clear - g]) linear_extrude(100) pocket_plan(g);
     gbox(pg_clip_box, clip_relief + g);
@@ -76,22 +86,7 @@ module behind_slab()
     translate(-(seat_depth + seat_clear + wall) * slope_n()) rotate([seat_angle, 0, 0])
         translate([-500, -500, -1000]) cube(1000);
 
-// Sealed air volume between the fan tray and the seat.
-module plenum() difference() {
-    intersection() {
-        rotate([90, 0, 90]) linear_extrude(Wd - 2*wall, center = true)
-            offset(delta = -wall) polygon([[0, 0], [D, 0], [D - run, H], [run, H]]);
-        behind_slab();
-    }
-    pager_pose() gbox(pg_clip_box, clip_relief + wall);
-    clip_wall_posts();
-    fan_pose() translate([-fan_tray/2 - wall, -fan_tray/2 - wall, -fan_clear - wall])
-        cube([fan_tray + 2*wall, fan_tray + 2*wall, 200]);
-    fan_cable_channel(g = wall);
-    pager_cable_guide(g = wall);
-}
-
-// Plenum -> pager: open channels along the -Y edge in front of both grilles.
+// Chamber -> pager: open channels along the -Y edge in front of both grilles.
 module intake_duct() pager_pose()
     for (v = vent_lo) {
         zb = pg_zc - pg_T/2 - seat_clear - wall - duct_dip;
@@ -121,35 +116,6 @@ module gasket_groove() pager_pose()
     translate([-pg_L/2 + pg_r, -pg_W/2 - seat_clear - groove_d, groove_z])
         cube([pg_L - 2*pg_r, groove_d + 0.01, groove_w]);
 
-// Rear-face frame: x across, y up the rear slope from the rear-bottom edge, z out of the face.
-module rear_frame() multmatrix([[1, 0, 0, 0],
-                                [0, rear_t()[1], rear_n()[1], D],
-                                [0, rear_t()[2], rear_n()[2], 0],
-                                [0, 0, 0, 1]]) children();
-
-// Fan cable: from both lower corners of the tray down the rear face to the
-// rear-bottom edge, with two bends for strain relief and a pocket for an
-// inline adapter. Open to the outside along its whole length, so no plug
-// ever has to pass through a hole.
-function cable_path(sx) = let(x0 = sx * (fan_size/2 - 10))
-    [[x0, fan_v0 + 6], [x0, 0.65 * fan_v0], [x0 - sx * 9, 0.45 * fan_v0], [x0 - sx * 9, -ch_w]];
-
-module fan_cable_channel(g = 0, probe = false) rear_frame() {
-    w = probe ? ch_w - 1 : ch_w + 2*g;
-    z0 = probe ? -ch_d + 0.5 : -ch_d - g;
-    for (sx = [-1, 1]) let(pts = cable_path(sx))
-        for (i = [0 : len(pts) - 2])
-            hull() for (q = [pts[i], pts[i + 1]])
-                translate([q[0], q[1], z0]) cylinder(d = w, h = 100, $fn = 24);
-    if (!probe)
-        translate([adapter_at[0] - adapter[0]/2 - g, adapter_at[1] - adapter[1]/2 - g, -adapter[2] - g])
-            cube([adapter[0] + 2*g, adapter[1] + 2*g, 100]);
-}
-
-module adapter_probe() rear_frame()
-    translate([adapter_at[0] - adapter[0]/2 + 0.2, adapter_at[1] - adapter[1]/2 + 0.2, -adapter[2] + 0.2])
-        cube([adapter[0] - 0.4, adapter[1] - 0.4, adapter[2] + 40]);
-
 // Pager USB cables: a groove down the port-end side face under each port.
 module pager_cable_guide(g = 0, probe = false)
     for (pc = port_centres) let(p = pose_pt([port_end_sign * pg_L/2, pc[0], pc[1]]),
@@ -165,12 +131,10 @@ module dock() {
         fan_slot();
         seat_pocket();
         end_windows();
-        plenum();
         intake_duct();
         exhaust_chamber();
         button_notch();
         gasket_groove();
-        fan_cable_channel();
         pager_cable_guide();
     }
     bar_grille();

@@ -70,15 +70,20 @@ slab_d = seat_depth + seat_clear + wall;  // seat slab, face to its back
 
 // ---- Fan slot and filter
 frame_t = 1.6;        // each filter frame
-filter_gap = 0.6;     // MERV 8 media clamped between the frames
+filter_gap = 1.2;     // MERV 8 media clamped between the frames (nearer 1 mm than 0.6)
 filter_border = 4;    // frame border, wider than fan_lip so the lips bear on it
 grid_bar = 1.2;       // fan-side grid keeps the media out of the blades
 grid_pitch = 8;       // (8 - 1.2)^2 / 8^2 -> 72 % open
 peg_d = 2;            // corner pegs on the grid frame...
 peg_fit = 0.05;       // ...pressed into cap holes this much bigger (FDM holes print a
                       // little small, so this grips; open it up if it's too tight)
+div_t = 1.6;          // divider between the fan slot and the filter slot; carries the lips
+filter_clear = 0.5;   // per side, filter frames in their slot (nothing seals on them)
+filter_clear_z = 0.8; // slack front-to-back, filter stack between the divider and the rear lips
 filter_stack = 2*frame_t + filter_gap;
-slot_depth = fan_t + filter_stack + fan_clear_z;
+slot_depth = fan_t + fan_clear_z;                 // fan slot: land to divider
+filt_depth = filter_stack + filter_clear_z;       // filter slot: divider to rear lips
+housing_depth = slot_depth + div_t + filt_depth;  // land to the rear wall's inner face
 hole_r = fan_size/2 - fan_ledge;
 relief = fan_clear + fan_nub[1] + 0.5;  // cable-bump room beyond the frame at the lower corners
 hx = fan_size/2 + relief + wall;        // housing half-width (and depth below the fan centre)

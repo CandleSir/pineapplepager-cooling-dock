@@ -29,7 +29,7 @@ function fan_pt(p) = let(q = fan_m() * [p[0], p[1], p[2], 1]) [q[0], q[1], q[2]]
 module fan_pose() multmatrix(fan_m()) children();
 
 // Housing box (fan frame) around the slot, lips and land.
-housing_box = [[-hx, -hx, -wall], [hx, fan_size/2 + fan_clear, slot_depth + wall]];
+housing_box = [[-hx, -hx, -wall], [hx, fan_size/2 + fan_clear, housing_depth + wall]];
 function housing_corners() = [for (k = box_corners(housing_box)) fan_pt(k)];
 
 module fan_envelope(t = fan_t) {

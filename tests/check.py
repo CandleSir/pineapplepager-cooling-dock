@@ -489,7 +489,9 @@ def test_housing_on_desk():
 
 
 # ---------------------------------------------------------------- v0.2 task 2: tapered body, fan slot
-STACK = "translate([-fan_size/2, -fan_size/2, fan_t]) cube([fan_size, fan_size, filter_stack]);"
+# the filter stack, frames at fan_size, media of exactly filter_gap: sits on the divider
+FILTER = ("translate([-fan_size/2, -fan_size/2, slot_depth + div_t + 0.01])"
+          " cube([fan_size, fan_size, filter_stack]);")
 FAN_POSES = {  # cable bump on the bottom edge, right (push) or left (flipped, pull); a side-edge
     # bump can't drop in without grooves that would stop the side walls locating the fan
     "down-right": "fan_envelope();",
@@ -501,7 +503,7 @@ FAN_POSES = {  # cable bump on the bottom edge, right (push) or left (flipped, p
 def test_profile():
     for v in VARIANTS:
         d = vd(v)
-        H, Wd, hx, top = P("[H, Wd, hx, fan_pt([0, fan_size/2 + fan_clear, slot_depth + wall])[2]]", d)
+        H, Wd, hx, top = P("[H, Wd, hx, fan_pt([0, fan_size/2 + fan_clear, housing_depth + wall])[2]]", d)
         _, dst = run_scad("dock();", d)
         lo, hi = stl_bbox(dst)
         assert all(hi[k] - lo[k] <= BED for k in range(3)), tag(v)
@@ -515,7 +517,7 @@ def test_profile():
 def test_fan_fits():
     for v in VARIANTS:
         for name, pose in FAN_POSES.items():
-            assert is_empty("intersection(){dock(); fan_pose() { %s %s }}" % (pose, STACK), vd(v)), \
+            assert is_empty("intersection(){dock(); fan_pose() { %s }}" % pose, vd(v)), \
                 "%s %s interferes" % (tag(v), name)
 
 
@@ -533,7 +535,7 @@ def test_fan_drop_in():
         for name, pose in FAN_POSES.items():
             # 0.01 off the land: the fan's face is coplanar with it, and CGAL leaves slivers there
             assert is_empty("intersection(){dock(); for (i = [0:5:120]) translate(i*fan_u() + 0.01*fan_n())"
-                            " fan_pose() { %s %s }}" % (pose, STACK), vd(v)), "%s %s: drop-in blocked" % (tag(v), name)
+                            " fan_pose() { %s }}" % pose, vd(v)), "%s %s: drop-in blocked" % (tag(v), name)
 
 
 @test
@@ -541,15 +543,8 @@ def test_fan_grip():
     """Fingertip room beside the top 6 mm of the fan and filter, both sides, from above."""
     for v in VARIANTS:
         probe = ("fan_pose() for (m = [0, 1]) mirror([m, 0, 0]) translate([fan_size/2 + fan_clear + 0.01,"
-                 " fan_size/2 - 6, 0.5]) cube([8, 60, slot_depth - 1]);")
+                 " fan_size/2 - 6, 0.5]) cube([8, 60, housing_depth - 1]);")
         assert is_empty("intersection(){dock(); %s}" % probe, vd(v)), "%s: no grip beside the fan" % tag(v)
-
-
-@test
-def test_stack_retained():
-    for v in VARIANTS:
-        assert not is_empty("intersection(){dock(); translate((fan_clear_z + 0.3)*fan_n()) fan_pose() { %s }}"
-                            % STACK, vd(v)), "%s: lips don't hold the filter stack" % tag(v)
 
 
 @test
@@ -562,6 +557,54 @@ def test_slot_clearance():
                             " cube([0.25, 10, 4]);}", d), "%s: side wall not at fan_clear" % tag(v)
         assert is_empty("intersection(){dock(); fan_pose() translate([fan_size/2, -5, 2])"
                         " cube([fan_clear - 0.05, 10, 4]);}", d), "%s: side wall inside fan_clear" % tag(v)
+
+
+@test
+def test_filter_slot():
+    """The filter stack drops into its own slot behind the divider, and a stack with
+    pegs standing proud by the slot's slack still goes in; the slot is 0.5/side and 0.8 deep clear."""
+    for v in VARIANTS:
+        d = vd(v)
+        assert is_empty("intersection(){dock(); for (i = [0:5:120]) translate(i*fan_u() + 0.01*fan_n())"
+                        " fan_pose() { %s }}" % FILTER, d), "%s: filter drop-in blocked" % tag(v)
+        proud = ("translate([-fan_size/2, -fan_size/2, slot_depth + div_t + 0.01])"
+                 " cube([fan_size, fan_size, filter_stack + filter_clear_z - 0.1]);")
+        assert is_empty("intersection(){dock(); fan_pose() %s}" % proud, d), "%s: proud pegs jam" % tag(v)
+        z = "slot_depth + div_t + 1"
+        assert not is_empty("intersection(){dock(); fan_pose() translate([fan_size/2 + filter_clear + 0.05, -5, %s])"
+                            " cube([0.25, 10, 2]);}" % z, d), "%s: filter side wall not at filter_clear" % tag(v)
+        assert is_empty("intersection(){dock(); fan_pose() translate([fan_size/2, -5, %s])"
+                        " cube([filter_clear - 0.05, 10, 2]);}" % z, d), "%s: filter side wall inside filter_clear" % tag(v)
+        assert not is_empty("intersection(){dock(); fan_pose() translate([-1, fan_size/2 - 2.5, housing_depth + 0.05])"
+                            " cube([2, 1, wall - 0.1]);}", d), "%s: no rear lip behind the filter" % tag(v)
+
+
+@test
+def test_fan_slot_depth():
+    """Fan alone: seats on the land, and the divider stops it fan_clear_z back."""
+    for v in VARIANTS:
+        d = vd(v)
+        assert is_empty("intersection(){dock(); translate((fan_clear_z - 0.05)*fan_n()) fan_pose() fan_envelope();}", d), \
+            "%s: slot shallower than fan_t + fan_clear_z" % tag(v)
+        assert not is_empty("intersection(){dock(); translate((fan_clear_z + 0.3)*fan_n()) fan_pose() fan_envelope();}", d), \
+            "%s: divider doesn't hold the fan" % tag(v)
+
+
+@test
+def test_divider_window():
+    """The divider is div_t thick, open through the middle, closed on all four sides inside the
+    frame's border, and its flat top is a printable bridge."""
+    assert P("filter_border - fan_lip") >= 1, "frame border must land on the lips"
+    for v in VARIANTS:
+        d = vd(v)
+        assert P("window_flat()", d) <= P("bridge_max", d), tag(v)
+        assert is_empty("intersection(){dock(); fan_pose() translate([-2, -2, slot_depth - 0.5]) cube([4, 4, div_t + 1]);}", d), \
+            "%s: window not open" % tag(v)
+        for where in ("[-1, fan_size/2 - 2.5, slot_depth + 0.05]",       # top lip
+                      "[-1, -fan_size/2 + 1.5, slot_depth + 0.05]",      # bottom lip
+                      "[fan_size/2 - 2.5, 8, slot_depth + 0.05]"):       # side lip, above the relief roofs
+            assert not is_empty("intersection(){dock(); fan_pose() translate(%s) cube([2, 1, div_t - 0.1]);}" % where, d), \
+                "%s: no lip at %s" % (tag(v), where)
 
 
 @test
@@ -655,15 +698,6 @@ def test_filter_frames():
         for part in (g, c):
             hanging, ceilings = bridges(stl_facets(part))
             assert not hanging or max(hanging) <= 25.1, "%d: frame bridges %r" % (fs, max(hanging))
-
-
-@test
-def test_spacer_slack():
-    """Empty frames as a spacer (no media): the fan still can't move more than 1.5 mm off its land."""
-    for v in VARIANTS:
-        e = ("translate(%s*fan_n()) fan_pose() { fan_envelope();"
-             " translate([-fan_size/2, -fan_size/2, fan_t]) cube([fan_size, fan_size, 2*frame_t]); }")
-        assert not is_empty("intersection(){dock(); %s}" % (e % "1.5"), vd(v)), "%s: too much slack" % tag(v)
 
 
 @test

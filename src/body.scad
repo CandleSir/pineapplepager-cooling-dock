@@ -25,15 +25,25 @@ module hole2d() intersection() {
     translate([-hole_r - 1, -hole_r - 1]) square([2*hole_r + 2, 2*hole_r + 1]);
 }
 
-// Slot cuts (fan frame): the slot, open at the top; the rear window between the lips;
-// cable-bump reliefs at both lower corners (bottom-edge exits), open out the back;
+// Air window through the divider and the rear wall: a square inside the frames' border,
+// closed on all four sides, with 45 deg top corners so the flat top bridges no more than
+// bridge_max (the teardrop hole's trick).
+function window_flat() = min(bridge_max, 2*(fan_size/2 - fan_lip));
+module window2d() let(w = fan_size/2 - fan_lip, c = w - window_flat()/2)
+    polygon([[-w, -w], [w, -w], [w, w - c], [window_flat()/2, w], [-window_flat()/2, w], [-w, w - c]]);
+
+// Slot cuts (fan frame): the fan slot, open at the top, fan-deep; the divider's window;
+// the filter slot behind it, open at the top; the rear window out the back; cable-bump
+// reliefs at both lower corners (bottom-edge exits), through everything and out the back;
 // finger scallops; the air hole.
 // g grows every cut but the hole (tests use it to prove wall thickness).
 module slot_local(g = 0, hole = true) {
     a = fan_size/2 + fan_clear + g;
     translate([-a, -a, -g]) cube([2*a, 200, slot_depth + 2*g]);
-    w = fan_size/2 - fan_lip + g;
-    translate([-w, -w, slot_depth - 0.01]) cube([2*w, 200, 100]);
+    translate([0, 0, slot_depth - 0.01 - g]) linear_extrude(div_t + 0.02 + 2*g) offset(delta = g) window2d();
+    b = fan_size/2 + filter_clear + g;
+    translate([-b, -b, slot_depth + div_t - g]) cube([2*b, 200, filt_depth + 2*g]);
+    translate([0, 0, housing_depth - 0.01 - g]) linear_extrude(100) offset(delta = g) window2d();
     r0 = fan_size/2 - 6 - fan_nub[0] - 1;   // inner end of the bump's run along the edge
     for (m = [0, 1]) mirror([m, 0, 0]) {
         translate([r0 - g, -fan_size/2 - relief - g, -g])
@@ -47,7 +57,7 @@ module slot_local(g = 0, hole = true) {
     // finger scallops beside the top of the fan and filter, to lift them out
     for (m = [0, 1]) mirror([m, 0, 0])
         translate([fan_size/2 - g, fan_size/2 - grip_h - g, -g])
-            cube([fan_clear + grip_w + 2*g, 200, slot_depth + 2*g]);
+            cube([fan_clear + grip_w + 2*g, 200, housing_depth + 2*g]);
     if (hole) translate([0, 0, -wall - 1]) linear_extrude(wall + 1.01) hole2d();
 }
 

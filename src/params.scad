@@ -48,9 +48,10 @@ $fn = 48;
 
 // ---- Derived body geometry (dock frame: X across, -Y toward user, Z up)
 fan_clear = 0.3;      // per side, fan in its slot
-fan_clear_z = 0.5;    // slack front-to-back, fan + filter stack between land and lips
+fan_clear_z = 0.5;    // slack front-to-back, fan between the land and the divider
 fan_ledge = 3;        // land around the air hole that the fan frame seals against
-fan_lip = 3;          // rear lips hold the filter stack in the slot
+fan_lip = 3;          // lips around the air windows: on the divider they hold the fan, on
+                      // both sides of the filter slot they hold the frames
 grip_w = 9;           // finger scallops beside the top of the fan, this wide...
 grip_h = 7;           // ...reaching this far down its sides
 fan_nub = [8, 4, 6];  // cable strain-relief bump on the frame edge [along, out, thick]
@@ -78,6 +79,7 @@ peg_d = 2;            // corner pegs on the grid frame...
 peg_fit = 0.05;       // ...pressed into cap holes this much bigger (FDM holes print a
                       // little small, so this grips; open it up if it's too tight)
 div_t = 1.6;          // divider between the fan slot and the filter slot; carries the lips
+div_cap = 2;          // the divider stops this far above the fan's top (no thin plate up the well)
 filter_clear = 0.5;   // per side, filter frames in their slot (nothing seals on them)
 filter_clear_z = 0.8; // slack front-to-back, filter stack between the divider and the rear lips
 filter_stack = 2*frame_t + filter_gap;

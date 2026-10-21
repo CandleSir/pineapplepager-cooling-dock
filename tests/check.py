@@ -606,6 +606,12 @@ def test_divider_window():
                       "[fan_size/2 - 2.5, 8, slot_depth + 0.05]"):       # side lip, above the relief roofs
             assert not is_empty("intersection(){dock(); fan_pose() translate(%s) cube([2, 1, div_t - 0.1]);}" % where, d), \
                 "%s: no lip at %s" % (tag(v), where)
+        # the divider stops div_cap above the fan's top: no thin plate up the well, held only by
+        # the necks beside the scallops
+        assert is_empty("intersection(){dock(); fan_pose() translate([-2, fan_size/2 + fan_clear + div_cap + 0.3,"
+                        " slot_depth - 0.5]) cube([4, 10, div_t + 1]);}", d), "%s: divider runs on above the fan" % tag(v)
+        assert not is_empty("intersection(){dock(); fan_pose() translate([-1, fan_size/2 + fan_clear + div_cap - 1.2,"
+                            " slot_depth + 0.05]) cube([2, 1, div_t - 0.1]);}", d), "%s: divider cap below div_cap" % tag(v)
 
 
 @test

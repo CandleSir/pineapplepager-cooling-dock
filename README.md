@@ -67,9 +67,11 @@ Other parts:
 ## Dust filter (push mode)
 
 In push mode, every bit of air reaching the Pager comes through the fan first.
-A filter on the fan's outer face therefore cleans all of it, and the dust ends
-up on a square you replace instead of inside the Pager. The filter is two thin
-frames with a square of MERV 8 furnace-filter media between them.
+A filter in the slot behind the fan therefore cleans most of it, and the dust
+ends up on a square you replace instead of inside the Pager. (Some air still
+reaches the fan unfiltered through the open slot top and the fan-cable
+reliefs; a sealed cable exit is on the list.) The filter is two thin frames
+with a square of MERV 8 furnace-filter media between them.
 
 1. **Cut the media.** Cut a pleated panel out of a MERV 8 furnace filter and pull
    it flat. Cut squares from the flat stretches between folds:

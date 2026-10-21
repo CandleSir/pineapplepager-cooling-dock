@@ -82,11 +82,13 @@ round. Cables (both the fan's and the Pager's) also wait for a later round.
 - **The divider's air window is closed on all four sides** *(Claude's call, from
   the builder check)*: a square inside the frame's border, lip width `fan_lip` = 3
   on every side, not open to the top as today's lips are. Under suction the
-  loose frame then seals on four sides against the divider and the only way
-  from the filter slot to the fan is through the media. The one unfiltered path
-  left is the slit between the fan's back and the divider (0 to `fan_clear_z`
-  wide, fed from the open slot top); that is accepted. Pushing `fan_clear_z`
-  toward zero to close it is not, see anti-goals.
+  loose frame then seals on four sides against the divider's lips. Unfiltered
+  paths that remain, accepted for this round: the slit between the fan's back
+  and the divider (0 to `fan_clear_z` wide, fed from the open slot top), and the
+  fan-cable corner reliefs, which run through the divider and the rear wall at
+  the frames' lower corners and so bypass the media there (found in review; a
+  sealed cable exit belongs to the cable round). Pushing `fan_clear_z` toward
+  zero is not, see anti-goals.
 - **Filter slot** behind the divider, open at the top like the fan slot, closed at
   the back by a rear wall with the same four-sided window so the filter's border
   bears on it (frame border `filter_border` = 4, as today).

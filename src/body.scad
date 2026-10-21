@@ -41,6 +41,10 @@ module slot_local(g = 0, hole = true) {
     a = fan_size/2 + fan_clear + g;
     translate([-a, -a, -g]) cube([2*a, 200, slot_depth + 2*g]);
     translate([0, 0, slot_depth - 0.01 - g]) linear_extrude(div_t + 0.02 + 2*g) offset(delta = g) window2d();
+    // the divider ends div_cap above the fan: above that it would be a plate held only by
+    // the necks beside the scallops (3.5 mm wide on the 40 mm docks)
+    translate([-a, fan_size/2 + fan_clear + div_cap - g, slot_depth - 0.01 - g])
+        cube([2*a, 200, div_t + 0.02 + 2*g]);
     b = fan_size/2 + filter_clear + g;
     translate([-b, -b, slot_depth + div_t - g]) cube([2*b, 200, filt_depth + 2*g]);
     translate([0, 0, housing_depth - 0.01 - g]) linear_extrude(100) offset(delta = g) window2d();

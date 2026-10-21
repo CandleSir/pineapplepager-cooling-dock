@@ -5,16 +5,13 @@ FN := 64
 
 DOCKS := $(VARIANTS:%=stl/dock-%.stl)
 FILTERS := $(foreach s,40 60,stl/filter-grid-$(s).stl stl/filter-cap-$(s).stl)
-GAUGES := stl/fan-gauge-40.stl stl/fan-gauge-60.stl
+GAUGES := $(VARIANTS:%=stl/fan-gauge-%.stl)
 SEAT := stl/coupon.stl stl/gasket.stl stl/fit-gauge.stl
 STLS := $(DOCKS) $(FILTERS) $(GAUGES) $(SEAT)
 PNGS := $(foreach v,$(VARIANTS),previews/front-$(v).png previews/rear-$(v).png previews/section-$(v).png)
 
 # 60x25 -> -D fan_size=60 -D fan_t=25
 fan = -D fan_size=$(word 1,$(subst x, ,$(1))) -D fan_t=$(word 2,$(subst x, ,$(1)))
-# fan gauges use the thicker fan of each size
-GAUGE_T_40 := 20
-GAUGE_T_60 := 25
 
 .PHONY: all test stl previews clean
 all: test stl previews
@@ -35,7 +32,7 @@ stl/filter-grid-%.stl: $(SRC)
 stl/filter-cap-%.stl: $(SRC)
 	$(OUT) -D 'part="filter-cap"' -D fan_size=$* src/dock.scad
 stl/fan-gauge-%.stl: $(SRC)
-	$(OUT) -D 'part="fan-gauge"' -D fan_size=$* -D fan_t=$(GAUGE_T_$*) src/dock.scad
+	$(OUT) -D 'part="fan-gauge"' $(call fan,$*) src/dock.scad
 stl/coupon.stl: $(SRC)
 	$(OUT) -D 'part="coupon"' src/dock.scad
 stl/gasket.stl: $(SRC)

@@ -702,8 +702,8 @@ def test_filter_frames():
 
 @test
 def test_fan_gauge():
-    for fs, t in ((40, 20), (60, 25)):
-        d = {"fan_size": fs, "fan_t": t}
+    for v in VARIANTS:
+        d, fs = vd(v), tag(v)
         _, g = run_scad("fan_gauge();", d)
         lo, hi = stl_bbox(g)
         approx(lo[2], 0, 0.01)
@@ -712,12 +712,19 @@ def test_fan_gauge():
         # the gauge must reach the walls that locate the fan, above the corner reliefs
         assert not is_empty("intersection(){ fan_gauge(); translate([fan_size/2 + fan_clear + 0.2,"
                             " -(fan_t - 0.5), hx + gauge_top - 3]) cube([1, fan_t - 1, 1]); }", d), \
-            "%d: gauge has no side wall at fan_clear" % fs
+            "%s: gauge has no side wall at fan_clear" % fs
+        # the gauge now carries the divider: its bottom lip is div_t thick, exactly slot_depth back
+        # (gauge frame: fan x -> x, fan z -> -y, fan y -> z + hx; probe at the slot's centreline,
+        # clear of the corner reliefs)
+        assert not is_empty("intersection(){ fan_gauge(); translate([-1, -(slot_depth + div_t - 0.05),"
+                            " hx - fan_size/2 + 1.5]) cube([2, div_t - 0.1, 1]); }", d), "%s: gauge has no divider" % fs
+        assert is_empty("intersection(){ fan_gauge(); translate([-1, -(slot_depth - 0.05), hx - fan_size/2 + 1.5])"
+                        " cube([2, 0.25, 1]); }", d), "%s: gauge slot shallower than slot_depth" % fs
         hanging, ceilings = bridges(stl_facets(g))
-        assert not hanging or max(hanging) <= 25.1, "%d gauge bridges %r" % (fs, max(hanging))
+        assert not hanging or max(hanging) <= 25.1, "%s gauge bridges %r" % (fs, max(hanging))
         # printed standing, supports off: no flat shelf may stick out more than 1 mm
         shelves = {z: round(w, 1) for z, w in ceilings.items() if w > 1.0}
-        assert not shelves, "%d: gauge has unsupported shelves %r" % (fs, shelves)
+        assert not shelves, "%s: gauge has unsupported shelves %r" % (fs, shelves)
 
 
 @test

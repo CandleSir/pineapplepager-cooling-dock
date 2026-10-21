@@ -511,6 +511,7 @@ def test_profile():
         approx(hi[2], H, 0.5)
         approx(hi[0] - lo[0], Wd, 0.5)
         assert 2 * hx < Wd and top < H, "%s: back doesn't taper (hx %.1f, top %.1f)" % (tag(v), hx, top)
+        approx(lo[1], P("toe", d) / 2, 0.05)   # the floating toe's edge is the front-most point
 
 
 @test
@@ -725,6 +726,25 @@ def test_fan_gauge():
         # printed standing, supports off: no flat shelf may stick out more than 1 mm
         shelves = {z: round(w, 1) for z, w in ceilings.items() if w > 1.0}
         assert not shelves, "%s: gauge has unsupported shelves %r" % (fs, shelves)
+
+
+@test
+def test_toe():
+    """The front edge floats: nothing in front of the 45 deg plane from y = toe on the desk,
+    a 90 deg edge at (toe/2, toe/2), and the cut stays >= wall from every cavity."""
+    for v in VARIANTS:
+        d = vd(v)
+        assert is_empty("intersection(){dock(); translate([-5, -1, -1]) cube([10, toe, 1.5]);}", d), \
+            "%s: desk contact in front of toe" % tag(v)
+        assert not is_empty("intersection(){dock(); translate([-5, toe + 0.1, 0]) cube([10, 1, 0.5]);}", d), \
+            "%s: no desk contact at toe" % tag(v)
+        assert not is_empty("intersection(){dock(); translate([-5, toe/2 + 0.6, toe/2 + 0.3]) cube([10, 0.2, 0.2]);}", d), \
+            "%s: edge missing at (toe/2, toe/2)" % tag(v)
+        assert is_empty("intersection(){dock(); translate([-5, toe/2 - 0.5, toe/2 - 0.5]) cube([10, 0.2, 0.2]);}", d), \
+            "%s: material in front of the edge" % tag(v)
+        for m in ["chamber", "intake_duct", "seat_pocket", "end_windows", "pager_cable_guide"]:
+            assert is_empty("intersection(){toe_cut(g = wall - 0.4); %s();}" % m, d), \
+                "%s: toe cut within a wall of %s" % (tag(v), m)
 
 
 @test

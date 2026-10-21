@@ -111,6 +111,9 @@ guide_d = 5;
 cradle_t = seat_depth + seat_clear + wall;
 gauge_h = 8;          // fit gauge: a collar of the pocket outline, slid onto the pager
 
+// ---- Toe and roof
+toe = 24;          // 45 deg undercut under the front edge, starting this far back on the desk
+
 // ---- Printing (standing on the base, supports OFF)
 bridge_max = 25;      // longest span the slicer may bridge
 rib_w = 1.2;          // designed-in supports: posts under the clip pocket's wall

@@ -109,6 +109,10 @@ module behind_slab()
 
 // Half-space dot(X, m) <= k, for a unit m in the YZ plane.
 module below(m, k) translate(k * m) rotate([atan2(m[2], m[1]), 0, 0]) translate([-500, -1000, -500]) cube(1000);
+module above(m, k) below(-m, -k);
+
+// Floating toe: everything in front of the 45 deg plane rising from the desk at y = toe.
+module toe_cut(g = 0) below([0, 1, 1]/sqrt(2), toe/sqrt(2) + g);
 
 // Sealed air path from the fan's hole to the intake duct, kept small: under the seat
 // slab (45 deg ceiling), under a 45 deg cap sloping down onto the hole's top, above a
@@ -182,6 +186,7 @@ module dock() {
         button_notch();
         gasket_groove();
         pager_cable_guide();
+        toe_cut();
     }
     bar_grille();
 }

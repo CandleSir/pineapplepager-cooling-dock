@@ -114,6 +114,14 @@ module above(m, k) below(-m, -k);
 // Floating toe: everything in front of the 45 deg plane rising from the desk at y = toe.
 module toe_cut(g = 0) below([0, 1, 1]/sqrt(2), toe/sqrt(2) + g);
 
+// Roof: one plane from the crest (top edge of the front face) down toward the back, as steep
+// as keeps roof_keep of rear wall above the housing's rear-top edge; never rising.
+function crest() = [0, H*cos(seat_angle)/sin(seat_angle), H];
+function roof_req() = fan_pt([0, fan_size/2 + fan_clear + roof_keep, housing_depth + wall]);
+function roof_a() = is_undef(roof_angle)
+    ? max(0, atan2(crest()[2] - roof_req()[2], roof_req()[1] - crest()[1])) : roof_angle;
+module roof_cut(g = 0) let(m = [0, sin(roof_a()), cos(roof_a())]) above(m, crest() * m - g);
+
 // Sealed air path from the fan's hole to the intake duct, kept small: under the seat
 // slab (45 deg ceiling), under a 45 deg cap sloping down onto the hole's top, above a
 // floor just below the hole and the duct, in front of the land, and only as wide as
@@ -187,12 +195,13 @@ module dock() {
         gasket_groove();
         pager_cable_guide();
         toe_cut();
+        roof_cut();
     }
     bar_grille();
 }
 // Seat cradle from the face down to the floor, laid flat (face up) for printing.
 cradle_t_lo = seat_u0 - duct_w - wall - 3;
-cradle_t_hi = seat_u0 + pg_W + seat_clear + notch_len + wall + 3;
+cradle_t_hi = min(seat_u0 + pg_W + seat_clear + notch_len + wall + 3, seat_u_top);  // stop at the crest: the roof starts there
 module coupon()
     translate([0, -cradle_t_lo, cradle_t]) rotate([-seat_angle, 0, 0]) intersection() {
         dock();

@@ -113,6 +113,8 @@ gauge_h = 8;          // fit gauge: a collar of the pocket outline, slid onto th
 
 // ---- Toe and roof
 toe = 24;          // 45 deg undercut under the front edge, starting this far back on the desk
+roof_keep = 4;     // the roof stops this far above the housing's rear-top edge, up the fan plane
+roof_angle = undef;  // deg down toward the back; derived from roof_keep unless forced with -D
 
 // ---- Printing (standing on the base, supports OFF)
 bridge_max = 25;      // longest span the slicer may bridge

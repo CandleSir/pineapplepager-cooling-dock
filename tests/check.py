@@ -748,6 +748,31 @@ def test_toe():
 
 
 @test
+def test_roof():
+    """One plane from the crest down toward the back: it takes the old flat top, sits at roof_a(),
+    keeps roof_keep above the housing's rear-top edge, and stays >= wall from every cavity."""
+    for v in VARIANTS:
+        d = vd(v)
+        a, cy, H = P("[roof_a(), crest()[1], H]", d)
+        assert 0 < a < 60, "%s: roof_a %.1f" % (tag(v), a)
+        drop = 30 * math.tan(math.radians(a))
+        # a thin full-width slice 30 mm behind the crest: its top is the roof plane (the slot
+        # well is open there, but the slot's side walls and the hull reach the roof)
+        _, s = run_scad("intersection(){dock(); translate([-500, %s, -500]) cube([1000, 0.2, 1000]);}" % (cy + 30), d)
+        approx(stl_bbox(s)[1][2], H - drop, 0.3)
+        # rear wall survives roof_keep above the housing's rear-top edge, at the slot's centreline
+        assert not is_empty("intersection(){dock(); fan_pose() translate([-1, fan_size/2 + fan_clear + roof_keep - 0.6,"
+                            " housing_depth + 0.2]) cube([2, 0.5, wall - 0.4]);}", d), "%s: roof cuts below roof_keep" % tag(v)
+        # (bounded to the hull: the seat cuts extend out of the face into air, where they
+        # legitimately cross the roof's half-space)
+        for m in ["chamber", "exhaust_chamber", "button_notch", "gasket_groove", "seat_pocket", "end_windows"]:
+            assert is_empty("intersection(){roof_cut(g = wall - 0.4); body_shell(); %s();}" % m, d), \
+                "%s: roof within a wall of %s" % (tag(v), m)
+    assert P("cradle_t_hi") <= P("seat_u_top") + 1e-6, "coupon box reaches past the crest"
+    approx(P("roof_a()", dict(vd((40, 10)), roof_angle=30)), 30, 1e-9)
+
+
+@test
 def test_coupon_small():
     _, dst = run_scad("coupon();")
     lo, hi = stl_bbox(dst)

@@ -8,7 +8,7 @@ sessions.
 Air path:
 
 1. The fan stands upright at the back, facing back and tilted up 15°, with an
-   optional dust filter on its outer face.
+   optional dust filter in its own slot behind it.
 2. Air goes through a teardrop hole in the wall in front of the fan, into a
    short chamber under the seat.
 3. The chamber feeds an intake duct at the two grilles on the Pager's lower
@@ -27,10 +27,10 @@ One per fan. All are 5 V USB Noctuas:
 
 | Fan | Width × depth × height (mm) | File |
 |---|---|---|
-| NF-A6x15 (60 × 15) | 101 × 147 × 92 | `stl/dock-60x15.stl` |
-| NF-A6x25 (60 × 25) | 101 × 156 × 92 | `stl/dock-60x25.stl` |
-| NF-A4x10 (40 × 10) | 101 × 142 × 92 | `stl/dock-40x10.stl` |
-| NF-A4x20 (40 × 20) | 101 × 151 × 92 | `stl/dock-40x20.stl` |
+| NF-A6x15 (60 × 15) | 101 × 137 × 92 | `stl/dock-60x15.stl` |
+| NF-A6x25 (60 × 25) | 101 × 147 × 92 | `stl/dock-60x25.stl` |
+| NF-A4x10 (40 × 10) | 101 × 133 × 92 | `stl/dock-40x10.stl` |
+| NF-A4x20 (40 × 20) | 101 × 142 × 92 | `stl/dock-40x20.stl` |
 
 The 80, 92 and 120 mm versions are in the `v0.1.0` tag.
 
@@ -39,7 +39,7 @@ Other parts:
 | File | What it's for |
 |---|---|
 | `stl/filter-grid-{40,60}.stl`, `stl/filter-cap-{40,60}.stl` | Filter frames, one pair per fan size |
-| `stl/fan-gauge-{40,60}.stl` | The bottom of the fan slot, for checking the fan's fit before a full dock |
+| `stl/fan-gauge-{60x15,60x25,40x10,40x20}.stl` | One per variant: the bottom of that fan's slot, for checking the fit before a full dock |
 | `stl/fit-gauge.stl` | A collar with the seat pocket's walls, for checking the Pager's fit |
 | `stl/coupon.stl` | The full seat cradle on its own |
 | `stl/gasket.stl` | Optional TPU seal strip for the seat's lower wall |
@@ -52,7 +52,9 @@ Other parts:
 - **USB ports:** the port end is fully open, so fat plugs and thumb drives fit.
   Grooves on that side face guide the cables down to the desk.
 - **Fan:** it drops into the slot from above, so it sits upright against the
-  wall with the air hole. Gravity leans it onto that wall, which seals it.
+  wall with the air hole. Gravity leans it onto that wall, which seals it. The
+  slot is exactly the fan's depth, so it seats the same with or without the
+  filter behind it.
   - No screws are needed.
   - Turn it so its cable leaves from the bottom edge, at a lower corner. The
     cable goes straight out the back there, at desk level. An inline adapter
@@ -81,13 +83,11 @@ frames with a square of MERV 8 furnace-filter media between them.
    then press the cap down onto the pegs. The pegs are a press fit into the
    cap's holes, so the stack holds together in your hand. If it's too tight to
    press on, reprint the cap with `-D peg_fit=0.15`.
-3. **Install it.** With the fan in place, slide the filter stack down the back
-   of the slot, between the fan and the lips, with the grid facing the fan. The
-   lips hold it all in place. To lift the fan or the filter out, pinch its top
-   edge through the finger scallops on either side of the slot.
-4. **Without a filter**, snap the two frames together empty and use them as a
-   spacer, so the fan can't walk off its wall.
-5. **In pull mode**, leave the filter out; it would be on the exhaust side.
+3. **Install it.** Slide the stack down the slot behind the fan, grid toward
+   the fan. The lips on both sides of that slot hold it; it is a loose fit on
+   purpose, the fan's own slot does the sealing. To lift the fan or the filter
+   out, pinch its top edge through the finger scallops on either side.
+4. **In pull mode**, leave the filter out; it would be on the exhaust side.
 
 Replace the media every few months, or when it looks grey. The grid also works
 as a finger guard in push mode.
@@ -103,12 +103,15 @@ as a finger guard in push mode.
   - **Infill: about 10 %.** Only the air path is modelled hollow. The rest of
     the body behind the seat is solid in the model and prints as sparse infill,
     so a low infill keeps the filament down. Use 3 or more walls.
+  - The front edge is undercut at 45° (it floats off the desk) and the roof
+    slopes down toward the back. Both print as exported, supports off.
 - **Filter frames:** print flat, grid side down.
-- **Fan gauge:** prints upright, as exported. Drop the fan in, with its cable at
-  a bottom corner. It should slide down without forcing and be snug side to side
-  in the top 8 mm of the slot (the wider part below is the cable relief). The
-  gauge stands straight and is as deep as the thicker fan, so a thin fan will
-  tip front to back in it; the dock's tilted slot holds it.
+- **Fan gauge:** print the one for your fan; it prints upright, as exported.
+  Drop the fan in, with its cable at a bottom corner. It should slide down
+  without forcing and be snug side to side in the top 8 mm of the slot (the
+  wider part below is the cable relief). The slot is exactly that fan's depth,
+  so it should sit firm front to back too; the thin wall behind it is the
+  filter slot's divider.
 - **Seat checks:**
   - `fit-gauge.stl` prints flat. Slide it onto the Pager to the middle of its
     edge, with the bump over the side button.
@@ -132,6 +135,11 @@ Override any value without editing files:
 ```sh
 openscad -D fan_size=60 -D fan_t=25 -D fan_clear=0.35 -D 'part="dock"' -o dock.stl src/dock.scad
 ```
+
+The floating toe (`toe`, mm back from where the front face would meet the desk)
+and the roof can be changed the same way. The roof angle is derived per fan,
+as steep as keeps the slot's rear wall above the fan; forcing it with
+`-D roof_angle=` steeper than that cuts into the lips, at your own risk.
 
 ## Building
 

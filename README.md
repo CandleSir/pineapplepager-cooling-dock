@@ -165,9 +165,9 @@ Compare the Pager's temperature over SSH (`cat /sys/class/thermal/thermal_zone*/
 or with a thermal camera. For a quick airflow check, hold a tissue strip over
 the upper grille.
 
-My results with ambient ~72F / ~23C (pager measured at 131F / 55C without dock):
-- v0.1.0 --------- 80mm positive pressure > 79F / 27C
-- v0.2.2 --------- 40mm positive or negative > 78F / 26C
+My results with ambient ~23C (~72F); pager measured at 55C (131F) without dock:
+- v0.1.0 --------- 80mm positive pressure > 26C (79F)
+- v0.2.2 --------- 40mm positive or negative > 26C (78F)
 - v0.3.0 --------- ETA October 22, 2026
 
 ## Credits
